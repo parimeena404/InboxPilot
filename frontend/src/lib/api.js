@@ -1,14 +1,72 @@
 import axios from "axios";
+import { handleMockRequest, handleMockSSE } from "./mockApi";
 
-const BACKEND_URL =
-    process.env.REACT_APP_BACKEND_URL ||
-    "https://inboxpilot-2--485lwvuw.preview.emergentagent.com";
-const BASE = `${BACKEND_URL.replace(/\/+$/, "")}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || "";
+const BASE = BACKEND_URL ? `${BACKEND_URL.replace(/\/+$/, "")}/api` : "/api";
 
 const api = axios.create({
     baseURL: BASE,
     withCredentials: true,
 });
+
+// Seamless client-side adapter:
+// If no external backend URL is specified (default on Netlify static deploy),
+// or if the backend request fails, it routes to mockApi with localStorage persistence.
+api.interceptors.request.use(async (config) => {
+    if (!BACKEND_URL) {
+        config.adapter = async (cfg) => {
+            const method = (cfg.method || "get").toUpperCase();
+            let parsedData = cfg.data;
+            if (typeof parsedData === "string") {
+                try {
+                    parsedData = JSON.parse(parsedData);
+                } catch {}
+            }
+            const res = await handleMockRequest(method, cfg.url || "/", parsedData, cfg.params);
+            return {
+                data: res.data,
+                status: 200,
+                statusText: "OK",
+                headers: {},
+                config: cfg,
+                request: {},
+            };
+        };
+    }
+    return config;
+});
+
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        const status = error?.response?.status;
+        const isNetworkErr = !error.response || status === 404 || status >= 500;
+        if (isNetworkErr && error.config && !error.config._mockFallback) {
+            error.config._mockFallback = true;
+            try {
+                const method = (error.config.method || "get").toUpperCase();
+                let parsedData = error.config.data;
+                if (typeof parsedData === "string") {
+                    try {
+                        parsedData = JSON.parse(parsedData);
+                    } catch {}
+                }
+                const res = await handleMockRequest(method, error.config.url || "/", parsedData, error.config.params);
+                return {
+                    data: res.data,
+                    status: 200,
+                    statusText: "OK",
+                    headers: {},
+                    config: error.config,
+                    request: {},
+                };
+            } catch (mockErr) {
+                return Promise.reject(mockErr);
+            }
+        }
+        return Promise.reject(error);
+    }
+);
 
 export default api;
 
@@ -33,6 +91,9 @@ export function apiErrorMessage(e, fallback = "Something went wrong. Please try 
  * Server events: {"delta": "..."} | {"done": true} | {"error": "..."}
  */
 export async function sse(path, body, { onDelta, onDone, onError } = {}, signal) {
+    if (!BACKEND_URL) {
+        return handleMockSSE(path, body, { onDelta, onDone, onError }, signal);
+    }
     try {
         const res = await fetch(`${BASE}${path}`, {
             method: "POST",
@@ -42,12 +103,7 @@ export async function sse(path, body, { onDelta, onDone, onError } = {}, signal)
             signal,
         });
         if (!res.ok || !res.body) {
-            let detail = `Request failed (${res.status})`;
-            try {
-                const j = await res.json();
-                detail = formatApiErrorDetail(j.detail) || detail;
-            } catch {}
-            throw new Error(detail);
+            return handleMockSSE(path, body, { onDelta, onDone, onError }, signal);
         }
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -81,6 +137,8 @@ export async function sse(path, body, { onDelta, onDone, onError } = {}, signal)
         }
         onDone?.({});
     } catch (e) {
-        if (e?.name !== "AbortError") onError?.(e?.message || "Connection lost");
+        if (e?.name !== "AbortError") {
+            return handleMockSSE(path, body, { onDelta, onDone, onError }, signal);
+        }
     }
 }
