@@ -264,6 +264,7 @@ export default function Dashboard() {
       Icon: Mail,
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-500',
+      link: '/inbox',
     },
     {
       label: 'Unread',
@@ -272,6 +273,7 @@ export default function Dashboard() {
       Icon: MailOpen,
       iconBg: 'bg-amber-50',
       iconColor: 'text-amber-500',
+      link: '/inbox?filter=unread',
     },
     {
       label: 'Requires Action',
@@ -280,6 +282,7 @@ export default function Dashboard() {
       Icon: AlertCircle,
       iconBg: 'bg-red-50',
       iconColor: 'text-red-500',
+      link: '/inbox?filter=action',
     },
     {
       label: 'Waiting for Response',
@@ -288,6 +291,7 @@ export default function Dashboard() {
       Icon: Clock,
       iconBg: 'bg-green-50',
       iconColor: 'text-green-500',
+      link: '/inbox?filter=waiting',
     },
   ];
 
@@ -318,7 +322,8 @@ export default function Dashboard() {
             variants={fadeUp}
             initial="hidden"
             animate="show"
-            className="relative rounded-xl p-5 shadow-sm"
+            onClick={() => navigate(m.link)}
+            className="relative rounded-xl p-5 shadow-sm cursor-pointer hover:border-[#6558E8]/40 hover:shadow-md transition-all"
             style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAF1' }}
           >
             <div className={`absolute top-4 right-4 w-10 h-10 rounded-lg flex items-center justify-center ${m.iconBg}`}>

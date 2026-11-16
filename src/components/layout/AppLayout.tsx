@@ -50,16 +50,10 @@ const AppLayout: React.FC = () => {
       <Sidebar />
 
       {/* Main content area */}
-      <motion.div
-        animate={{
-          marginLeft: typeof window !== 'undefined' && window.innerWidth >= 768
-            ? sidebarCollapsed
-              ? 72
-              : 260
-            : 0,
-        }}
-        transition={{ duration: 0.2, ease: 'easeInOut' }}
-        className="flex flex-col min-h-screen"
+      <div
+        className={`flex flex-col min-h-screen transition-all duration-200 ml-0 ${
+          sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-[260px]'
+        }`}
       >
         {/* TopBar */}
         <TopBar title={pageTitle} breadcrumb={breadcrumb} />
@@ -68,7 +62,7 @@ const AppLayout: React.FC = () => {
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
           <Outlet />
         </main>
-      </motion.div>
+      </div>
 
       {/* Toast */}
       <Toast />

@@ -30,6 +30,7 @@ export default function Onboarding() {
   const navigate = useNavigate()
   const login = useStore((s) => s.login)
   const completeOnboarding = useStore((s) => s.completeOnboarding)
+  const connectAccount = useStore((s) => s.connectAccount)
 
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState(1)
@@ -44,6 +45,10 @@ export default function Onboarding() {
   }>({ open: false, provider: '', phase: 'authorizing' })
 
   const goNext = () => {
+    // Ensure user session initialized if skipping steps
+    if (step === 1 && !useStore.getState().isAuthenticated) {
+      login(selectedRole, false)
+    }
     setDirection(1)
     setStep((s) => Math.min(s + 1, STEPS.length - 1))
   }
@@ -61,9 +66,11 @@ export default function Onboarding() {
 
   const handleProviderClick = (provider: string) => {
     setOauthModal({ open: true, provider, phase: 'authorizing' })
+    const email = provider === 'gmail' ? 'david.sterling@acmeventures.com' : 'executive@corporate.outlook.com'
     setTimeout(() => {
       setOauthModal((m) => ({ ...m, phase: 'connected' }))
       setConnectedProvider(provider)
+      connectAccount(provider as 'gmail' | 'outlook', email)
       setTimeout(() => {
         setOauthModal({ open: false, provider: '', phase: 'authorizing' })
       }, 1200)
@@ -71,13 +78,24 @@ export default function Onboarding() {
   }
 
   const handleFinish = () => {
+    if (!useStore.getState().isAuthenticated) {
+      login(selectedRole, false)
+    }
     completeOnboarding()
-    navigate('/dashboard')
+    if (selectedRole === 'client') {
+      navigate('/client')
+    } else {
+      navigate('/dashboard')
+    }
   }
 
   const handleDemoMode = () => {
     login(selectedRole, true)
-    navigate('/dashboard')
+    if (selectedRole === 'client') {
+      navigate('/client')
+    } else {
+      navigate('/dashboard')
+    }
   }
 
   return (

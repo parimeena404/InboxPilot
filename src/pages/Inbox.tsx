@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -124,6 +124,9 @@ const Inbox: React.FC = () => {
   const markAsUnread = useStore((s) => s.markAsUnread);
   const reclassify = useStore((s) => s.reclassify);
   const showToastMessage = useStore((s) => s.showToastMessage);
+  const addReplyMessage = useStore((s) => s.addReplyMessage);
+  const storeSearchQuery = useStore((s) => s.searchQuery);
+  const setStoreSearchQuery = useStore((s) => s.setSearchQuery);
   const user = useStore((s) => s.user);
 
   // Local state
@@ -137,6 +140,26 @@ const Inbox: React.FC = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmArchive, setConfirmArchive] = useState(false);
 
+  // Sync with URL query parameter changes
+  useEffect(() => {
+    if (!urlFilter) {
+      setActiveTab('all');
+      setClassificationFilter('all');
+    } else if (urlFilter === 'important' || urlFilter === 'action' || urlFilter === 'unread') {
+      setActiveTab(urlFilter as Tab);
+      setClassificationFilter('all');
+    } else if (urlFilter === 'assistant' || urlFilter === 'client' || urlFilter === 'noreply' || urlFilter === 'review') {
+      setActiveTab('all');
+      setClassificationFilter(urlFilter);
+    } else if (urlFilter === 'waiting') {
+      setActiveTab('action');
+      setClassificationFilter('assistant');
+    } else if (urlFilter === 'completed') {
+      setActiveTab('all');
+      setClassificationFilter('noreply');
+    }
+  }, [urlFilter]);
+
   // Reply state
   const [replyText, setReplyText] = useState('');
   const [tone, setTone] = useState<(typeof TONES)[number]>('Professional');
@@ -146,6 +169,7 @@ const Inbox: React.FC = () => {
   const filtered = useMemo(() => {
     let list = conversations.filter((c) => {
       if (urlFilter === 'archived') return c.isArchived;
+      if (urlFilter === 'completed') return !c.isArchived && !c.aiInsights.requiresResponse;
       return !c.isArchived;
     });
 
@@ -163,15 +187,17 @@ const Inbox: React.FC = () => {
       list = list.filter((c) => c.classification === classificationFilter);
     }
 
-    // search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
+    // search: combine local input and global TopBar search
+    const q = (searchQuery || storeSearchQuery).toLowerCase().trim();
+    if (q) {
       list = list.filter(
         (c) =>
           c.subject.toLowerCase().includes(q) ||
+          c.labels?.some((l) => l.toLowerCase().includes(q)) ||
           c.messages.some(
             (m) =>
               m.from.name.toLowerCase().includes(q) ||
+              m.from.email.toLowerCase().includes(q) ||
               m.body.toLowerCase().includes(q),
           ),
       );
@@ -187,7 +213,7 @@ const Inbox: React.FC = () => {
     });
 
     return list;
-  }, [conversations, activeTab, classificationFilter, searchQuery, sortBy, urlFilter]);
+  }, [conversations, activeTab, classificationFilter, searchQuery, storeSearchQuery, sortBy, urlFilter]);
 
   const selectedConversation = useMemo(
     () => conversations.find((c) => c.id === selectedConversationId) ?? null,
@@ -266,14 +292,24 @@ const Inbox: React.FC = () => {
   }, [selectedIds, markAsRead, showToastMessage]);
 
   const handleSend = useCallback(() => {
-    if (!replyText.trim()) return;
+    if (!replyText.trim() || !selectedConversation) return;
+    addReplyMessage(selectedConversation.id, replyText);
     showToastMessage('Reply sent (simulated)', 'success');
     setReplyText('');
-  }, [replyText, showToastMessage]);
+  }, [replyText, selectedConversation, addReplyMessage, showToastMessage]);
 
   const handleAiSuggest = useCallback(() => {
-    setReplyText(mockReplies[tone]);
-  }, [tone]);
+    if (!selectedConversation) return;
+    let reply = mockReplies[tone];
+    if (tone === 'Professional') {
+      reply = `Thank you for following up regarding "${selectedConversation.subject}". On behalf of ${selectedConversation.clientName || 'David Sterling'}, I have reviewed the details and will coordinate the requested actions shortly. Please let me know if you need anything further.\n\nBest regards,\nAlex Morgan`;
+    } else if (tone === 'Friendly') {
+      reply = `Hi! Thanks so much for reaching out about "${selectedConversation.subject}". Everything looks great on our end, and I'll get back to you with next steps soon!\n\nWarm regards,\nAlex`;
+    } else {
+      reply = `Acknowledged regarding "${selectedConversation.subject}". Reviewed and confirmed on our end. Will follow up by end of day.`;
+    }
+    setReplyText(reply);
+  }, [tone, selectedConversation]);
 
   // ── confidence bar color ──
   function confidenceColor(v: number) {
@@ -557,6 +593,31 @@ const Inbox: React.FC = () => {
                       {selectedConversation.aiInsights.summary}
                     </span>
                   </p>
+                </div>
+
+                {/* Quick Classification Switcher */}
+                <div className="mt-3 pt-3 border-t border-[#E9EAF1]">
+                  <p className="text-[11px] font-semibold text-[#777D91] mb-2 uppercase tracking-wider">
+                    Change Classification:
+                  </p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(['assistant', 'client', 'noreply', 'review'] as Classification[]).map((cls) => (
+                      <button
+                        key={cls}
+                        onClick={() => {
+                          reclassify(selectedConversation.id, cls);
+                          showToastMessage(`Reclassified as ${cls}`, 'success');
+                        }}
+                        className={`text-xs px-2.5 py-1 rounded-lg transition-all border ${
+                          selectedConversation.classification === cls
+                            ? 'border-[#6558E8] bg-[#6558E8]/10 font-bold shadow-xs'
+                            : 'border-[#E9EAF1] bg-white opacity-70 hover:opacity-100 hover:border-gray-300'
+                        }`}
+                      >
+                        <Badge variant={cls} />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 

@@ -113,10 +113,10 @@ const defaultNotifications: NotificationItem[] = [
 export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
-      isAuthenticated: true,
-      user: defaultUser,
+      isAuthenticated: false,
+      user: null,
       role: 'assistant',
-      onboardingComplete: true,
+      onboardingComplete: false,
       conversations: sampleConversations,
       selectedConversationId: null,
       searchQuery: '',
@@ -137,15 +137,25 @@ export const useStore = create<AppState>()(
           user: { ...defaultUser, role },
           role,
           onboardingComplete: demoMode ? true : get().onboardingComplete,
+          conversations: sampleConversations,
+          connectedAccounts: defaultAccounts,
+          notifications: defaultNotifications,
         })
       },
 
       logout: () => {
+        localStorage.removeItem('inboxpilot-storage')
         set({
           isAuthenticated: false,
           user: null,
           onboardingComplete: false,
           selectedConversationId: null,
+          conversations: sampleConversations,
+          connectedAccounts: [],
+          notifications: defaultNotifications,
+          searchQuery: '',
+          activeFilter: 'all',
+          role: 'assistant',
         })
       },
 
@@ -233,9 +243,11 @@ export const useStore = create<AppState>()(
               ? {
                   ...c,
                   classification: 'noreply' as Classification,
+                  labels: [...(c.labels || []).filter((l) => l !== 'Action Required'), 'Handled by Client'],
                   aiInsights: {
                     ...c.aiInsights,
                     classification: 'noreply' as Classification,
+                    requiresResponse: false,
                     suggestedAction: 'Marked as handled by client',
                   },
                 }
@@ -294,25 +306,25 @@ export const useStore = create<AppState>()(
       },
 
       addReplyMessage: (convId, text) => {
-        const newMessage = {
-          id: `msg-reply-${Date.now()}`,
-          from: { name: 'Alex Morgan (Assistant)', email: 'alex.morgan@company.com' },
-          to: [{ name: 'Client/Recipient', email: 'recipient@company.com' }],
-          subject: 'Re: Response',
-          body: text,
-          timestamp: new Date().toISOString(),
-          isRead: true,
-        }
         set((s) => ({
-          conversations: s.conversations.map((c) =>
-            c.id === convId
-              ? {
-                  ...c,
-                  messages: [...c.messages, newMessage],
-                  lastActivity: new Date().toISOString(),
-                }
-              : c
-          ),
+          conversations: s.conversations.map((c) => {
+            if (c.id !== convId) return c;
+            const originalSender = c.messages[0]?.from || { name: 'Recipient', email: 'recipient@company.com' };
+            const newMessage = {
+              id: `msg-reply-${Date.now()}`,
+              from: { name: 'Alex Morgan (Assistant)', email: 'alex.morgan@company.com' },
+              to: [originalSender],
+              subject: c.subject.startsWith('Re:') ? c.subject : `Re: ${c.subject}`,
+              body: text,
+              timestamp: new Date().toISOString(),
+              isRead: true,
+            };
+            return {
+              ...c,
+              messages: [...c.messages, newMessage],
+              lastActivity: new Date().toISOString(),
+            };
+          }),
         }))
       },
     }),

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Menu,
@@ -45,6 +45,7 @@ const filterTitles: Record<string, string> = {
 
 const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
   const filter = searchParams.get('filter');
 
@@ -124,7 +125,12 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
       <div className="hidden sm:block w-64 lg:w-80">
         <SearchInput
           value={searchQuery}
-          onChange={setSearchQuery}
+          onChange={(val) => {
+            setSearchQuery(val);
+            if (location.pathname !== '/inbox' && val) {
+              navigate('/inbox');
+            }
+          }}
           placeholder="Search emails..."
         />
       </div>
@@ -247,8 +253,10 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
               <div className="py-1">
                 <button
                   onClick={() => {
-                    setRole(role === 'assistant' ? 'client' : 'assistant');
+                    const nextRole = role === 'assistant' ? 'client' : 'assistant';
+                    setRole(nextRole);
                     setUserMenuOpen(false);
+                    navigate(nextRole === 'client' ? '/client' : '/dashboard');
                   }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#20243A] hover:bg-[#F7F8FC] transition-colors"
                 >
@@ -258,8 +266,7 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
                 <button
                   onClick={() => {
                     setUserMenuOpen(false);
-                    // navigate to settings
-                    window.location.hash = '#/settings';
+                    navigate('/settings');
                   }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#20243A] hover:bg-[#F7F8FC] transition-colors"
                 >
@@ -270,6 +277,7 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
                   onClick={() => {
                     resetDemo();
                     setUserMenuOpen(false);
+                    navigate('/dashboard');
                   }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#20243A] hover:bg-[#F7F8FC] transition-colors"
                 >
@@ -281,6 +289,7 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
                   onClick={() => {
                     logout();
                     setUserMenuOpen(false);
+                    navigate('/');
                   }}
                   className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >

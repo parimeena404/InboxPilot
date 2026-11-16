@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { NavLink, useLocation, useSearchParams } from 'react-router-dom';
+import { NavLink, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail,
@@ -117,6 +117,7 @@ function isItemActive(item: NavItem, pathname: string, searchParams: URLSearchPa
 }
 
 const Sidebar: React.FC = () => {
+  const navigate = useNavigate();
   const sidebarCollapsed = useStore((s) => s.sidebarCollapsed);
   const mobileSidebarOpen = useStore((s) => s.mobileSidebarOpen);
   const toggleSidebar = useStore((s) => s.toggleSidebar);
@@ -179,6 +180,7 @@ const Sidebar: React.FC = () => {
                     onClick={() => {
                       setRole(r);
                       setRoleSwitcherOpen(false);
+                      navigate(r === 'client' ? '/client' : '/dashboard');
                     }}
                     className={`w-full text-left px-3 py-2 text-sm transition-colors capitalize ${
                       role === r
