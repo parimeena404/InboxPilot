@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
@@ -12,6 +12,12 @@ import {
   RefreshCw,
   InboxIcon,
   TrendingUp,
+  UserCheck,
+  Calendar,
+  Focus,
+  ChevronRight,
+  Check,
+  Zap,
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
@@ -19,8 +25,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useStore } from '@/store/useStore';
 import type { Conversation, Classification } from '@/types';
 import Badge from '@/components/ui/Badge';
-
-// ── helpers ──────────────────────────────────────────────────────────
+import { Button } from '@/components/ui/Button';
 
 function getGreeting(): string {
   const h = new Date().getHours();
@@ -40,14 +45,13 @@ function initials(name: string): string {
 
 function avatarColor(name: string): string {
   const colors = [
-    '#6558E8',
-    '#E85858',
-    '#58A6E8',
-    '#E8A858',
-    '#58E89A',
-    '#C758E8',
-    '#E85889',
-    '#58D5E8',
+    '#635BDB',
+    '#3B82F6',
+    '#059669',
+    '#D97706',
+    '#7C3AED',
+    '#DB2777',
+    '#0891B2',
   ];
   let hash = 0;
   for (const ch of name) hash = ch.charCodeAt(0) + ((hash << 5) - hash);
@@ -56,7 +60,7 @@ function avatarColor(name: string): string {
 
 function preview(conv: Conversation): string {
   const last = conv.messages[conv.messages.length - 1];
-  return last?.body?.slice(0, 60) + (last?.body?.length > 60 ? '…' : '');
+  return last?.body?.slice(0, 75) + (last?.body?.length > 75 ? '…' : '');
 }
 
 function hasUnread(conv: Conversation): boolean {
@@ -66,63 +70,59 @@ function hasUnread(conv: Conversation): boolean {
 const priorityOrder: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
 const classColors: Record<Classification, string> = {
-  assistant: '#3B82F6',
-  client: '#F59E0B',
-  noreply: '#22C55E',
-  review: '#8B5CF6',
+  assistant: '#2563EB',
+  client: '#D97706',
+  noreply: '#059669',
+  review: '#7C3AED',
 };
 
-// ── animation variants ──────────────────────────────────────────────
-
 const fadeUp = {
-  hidden: { opacity: 0, y: 18 },
+  hidden: { opacity: 0, y: 14 },
   show: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.07, duration: 0.35, ease: 'easeOut' },
+    transition: { delay: i * 0.05, duration: 0.3, ease: [0.4, 0, 0.2, 1] },
   }),
 };
-
-// ── component ───────────────────────────────────────────────────────
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const conversations = useStore((s) => s.conversations);
   const selectConversation = useStore((s) => s.selectConversation);
+  const reclassify = useStore((s) => s.reclassify);
+  const markClientHandled = useStore((s) => s.markClientHandled);
+  const showToastMessage = useStore((s) => s.showToastMessage);
+  const user = useStore((s) => s.user);
 
-  // ── derived data ──────────────────────────────────────────────────
-
+  // Active (non-archived)
   const active = useMemo(
     () => conversations.filter((c) => !c.isArchived),
     [conversations],
   );
 
   const totalEmails = active.length;
-
-  const unreadCount = useMemo(
-    () => active.filter(hasUnread).length,
-    [active],
-  );
-
+  const unreadCount = useMemo(() => active.filter(hasUnread).length, [active]);
   const requiresAction = useMemo(
-    () =>
-      active.filter((c) =>
-        ['assistant', 'client', 'review'].includes(c.classification),
-      ).length,
+    () => active.filter((c) => c.aiInsights.requiresResponse).length,
     [active],
   );
-
   const waitingForResponse = useMemo(
-    () =>
-      active.filter(
-        (c) =>
-          c.aiInsights.requiresResponse && c.classification === 'assistant',
-      ).length,
+    () => active.filter((c) => c.aiInsights.requiresResponse && c.classification === 'assistant').length,
+    [active],
+  );
+  const clientCount = useMemo(
+    () => active.filter((c) => c.classification === 'client').length,
+    [active],
+  );
+  const assistantCount = useMemo(
+    () => active.filter((c) => c.classification === 'assistant').length,
     [active],
   );
 
-  const prioritySorted = useMemo(() => {
+  // Priority sorted queue for command center
+  const priorityQueue = useMemo(() => {
     return [...active]
+      .filter((c) => c.aiInsights.requiresResponse)
       .sort((a, b) => {
         const pA = priorityOrder[a.priority] ?? 2;
         const pB = priorityOrder[b.priority] ?? 2;
@@ -130,15 +130,28 @@ export default function Dashboard() {
         const uA = hasUnread(a) ? 0 : 1;
         const uB = hasUnread(b) ? 0 : 1;
         if (uA !== uB) return uA - uB;
-        return (
-          new Date(b.lastActivity).getTime() -
-          new Date(a.lastActivity).getTime()
-        );
+        return new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime();
       })
-      .slice(0, 8);
+      .slice(0, 5);
   }, [active]);
 
-  // classification distribution
+  // Client pending decisions
+  const clientPending = useMemo(() => {
+    return active
+      .filter((c) => c.classification === 'client')
+      .slice(0, 3);
+  }, [active]);
+
+  // Meeting signals
+  const meetingEmails = useMemo(() => {
+    return active.filter(
+      (c) =>
+        /meet|calendar|schedule|sync|dinner|coffee/i.test(c.subject) ||
+        c.messages.some((m) => /meet|calendar|schedule/i.test(m.body)),
+    ).slice(0, 3);
+  }, [active]);
+
+  // Classification distribution
   const distData = useMemo(() => {
     const counts: Record<Classification, number> = {
       assistant: 0,
@@ -148,174 +161,201 @@ export default function Dashboard() {
     };
     active.forEach((c) => counts[c.classification]++);
     return [
-      { name: 'Assistant', value: counts.assistant, color: classColors.assistant },
-      { name: 'Client', value: counts.client, color: classColors.client },
-      { name: 'No-Reply', value: counts.noreply, color: classColors.noreply },
-      { name: 'Review', value: counts.review, color: classColors.review },
+      { name: 'Assistant to Reply', value: counts.assistant, color: classColors.assistant },
+      { name: 'Client Decisions', value: counts.client, color: classColors.client },
+      { name: 'No Reply Needed', value: counts.noreply, color: classColors.noreply },
+      { name: 'Needs Review', value: counts.review, color: classColors.review },
     ].filter((d) => d.value > 0);
   }, [active]);
 
-  // AI briefing derived data
-  const clientCount = useMemo(
-    () => active.filter((c) => c.classification === 'client').length,
-    [active],
-  );
-  const assistantCount = useMemo(
-    () => active.filter((c) => c.classification === 'assistant').length,
-    [active],
-  );
-  const meetingEmails = useMemo(
-    () =>
-      active.filter(
-        (c) =>
-          /meet|calendar|schedule|sync/i.test(c.subject) ||
-          c.messages.some((m) => /meet|calendar|schedule/i.test(m.body)),
-      ),
-    [active],
-  );
+  // AI Briefing copy
+  const briefingHeadline = useMemo(() => {
+    if (requiresAction === 0) return 'Your inbox is completely caught up.';
+    if (clientCount > 0 && assistantCount > 0) {
+      return `Your inbox is under control. ${requiresAction} conversations need attention today: ${clientCount} pending client approval and ${assistantCount} ready for assistant execution.`;
+    }
+    if (clientCount > 0) {
+      return `Attention required: ${clientCount} critical decision${clientCount > 1 ? 's are' : ' is'} awaiting client sign-off.`;
+    }
+    return `Operational status clear: ${assistantCount} scheduling and response task${assistantCount > 1 ? 's can' : ' can'} be resolved immediately.`;
+  }, [requiresAction, clientCount, assistantCount]);
 
-  const keyDevelopments = useMemo(() => {
-    const highPri = active.filter((c) => c.priority === 'high');
-    const bullets: string[] = [];
-    if (highPri.length > 0)
-      bullets.push(
-        `${highPri.length} high-priority email${highPri.length > 1 ? 's' : ''} need${highPri.length === 1 ? 's' : ''} immediate attention`,
-      );
-    if (clientCount > 0)
-      bullets.push(
-        `${clientCount} email${clientCount > 1 ? 's' : ''} flagged for client decision`,
-      );
-    const starred = active.filter((c) => c.isStarred).length;
-    if (starred > 0) bullets.push(`${starred} starred conversation${starred > 1 ? 's' : ''} in your inbox`);
-    if (bullets.length === 0) bullets.push('Your inbox is looking manageable today');
-    return bullets.slice(0, 3);
-  }, [active, clientCount]);
-
-  const recommendedAction = useMemo(() => {
-    const first = prioritySorted[0];
-    if (!first) return "You're all caught up!";
-    if (first.priority === 'high')
-      return `Start with "${first.subject}" — it's high priority and ${hasUnread(first) ? 'unread' : 'needs a reply'}.`;
-    return `Review your ${unreadCount} unread email${unreadCount !== 1 ? 's' : ''} first, then tackle action items.`;
-  }, [prioritySorted, unreadCount]);
-
-  // recent activity from conversations
+  // Recent activity feed
   const recentActivity = useMemo(() => {
-    type Activity = {
-      id: string;
-      icon: typeof Mail;
-      text: string;
-      time: string;
-      badge?: Classification;
-    };
-    const items: Activity[] = [];
-
-    // latest 4 classified
-    [...active]
-      .sort(
-        (a, b) =>
-          new Date(b.lastActivity).getTime() -
-          new Date(a.lastActivity).getTime(),
-      )
-      .slice(0, 4)
-      .forEach((c) => {
-        const sender = c.messages[c.messages.length - 1]?.from.name ?? 'Unknown';
-        items.push({
-          id: `class-${c.id}`,
-          icon: InboxIcon,
-          text: `Email classified as`,
+    return active
+      .slice(0, 5)
+      .map((c) => {
+        const sender = c.messages[c.messages.length - 1]?.from.name ?? 'Contact';
+        return {
+          id: c.id,
+          title: c.subject,
+          sender,
           time: c.lastActivity,
-          badge: c.classification,
-        });
-        items.push({
-          id: `new-${c.id}`,
-          icon: Mail,
-          text: `New email from ${sender}`,
-          time: c.lastActivity,
-        });
+          classification: c.classification,
+          priority: c.priority,
+        };
       });
-
-    // add an "account synced" event
-    items.push({
-      id: 'sync',
-      icon: RefreshCw,
-      text: 'Account synced successfully',
-      time: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    });
-
-    // dedupe & limit
-    return items.slice(0, 6);
   }, [active]);
 
-  // ── handlers ──────────────────────────────────────────────────────
-
-  function handleSelectConversation(id: string) {
+  function handleOpenConv(id: string) {
     selectConversation(id);
     navigate('/inbox');
   }
 
-  // ── metric cards config ───────────────────────────────────────────
+  function handleDelegate(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    reclassify(id, 'assistant');
+    showToastMessage('Delegated to assistant workspace', 'info');
+  }
 
-  const metrics = [
-    {
-      label: 'Total Emails',
-      value: totalEmails,
-      delta: '+3 from yesterday',
-      Icon: Mail,
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-500',
-      link: '/inbox',
-    },
-    {
-      label: 'Unread',
-      value: unreadCount,
-      delta: '+5 from yesterday',
-      Icon: MailOpen,
-      iconBg: 'bg-amber-50',
-      iconColor: 'text-amber-500',
-      link: '/inbox?filter=unread',
-    },
-    {
-      label: 'Requires Action',
-      value: requiresAction,
-      delta: '+2 from yesterday',
-      Icon: AlertCircle,
-      iconBg: 'bg-red-50',
-      iconColor: 'text-red-500',
-      link: '/inbox?filter=action',
-    },
-    {
-      label: 'Waiting for Response',
-      value: waitingForResponse,
-      delta: '+1 from yesterday',
-      Icon: Clock,
-      iconBg: 'bg-green-50',
-      iconColor: 'text-green-500',
-      link: '/inbox?filter=waiting',
-    },
-  ];
-
-  // ── render ────────────────────────────────────────────────────────
+  function handleApprove(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    markClientHandled(id);
+    showToastMessage('Marked as approved and handled', 'success');
+  }
 
   return (
-    <div className="min-h-screen p-6 md:p-8 space-y-8" style={{ backgroundColor: '#F7F8FC' }}>
-      {/* ── Welcome ─────────────────────────────────────── */}
+    <div className="min-h-screen p-5 md:p-8 space-y-7 max-w-7xl mx-auto">
+      {/* ── TOP HEADER: AI COMMAND CENTER ── */}
       <motion.div
-        initial={{ opacity: 0, y: -10 }}
+        initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
+        transition={{ duration: 0.3 }}
+        className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-border/80"
       >
-        <h1 className="text-2xl md:text-3xl font-bold" style={{ color: '#20243A' }}>
-          {getGreeting()}, Alex
-        </h1>
-        <p className="mt-1" style={{ color: '#777D91' }}>
-          Here's what needs your attention today
-        </p>
+        <div>
+          <div className="flex items-center gap-2 mb-1.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent/10 text-accent text-[11px] font-semibold tracking-wide">
+              <Zap className="w-3 h-3" />
+              AI Command Center
+            </span>
+            <span className="text-xs text-txt-secondary">
+              Managing desk for <span className="font-semibold text-txt-primary">David Sterling</span>
+            </span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold text-txt-primary heading-serif tracking-tight">
+            {getGreeting()}, {user?.name.split(' ')[0] || 'Alex'}
+          </h1>
+          <p className="text-sm text-txt-secondary mt-0.5">
+            Here is your executive communication intelligence brief for today.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2.5">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => navigate('/focus')}
+            className="gap-2 shadow-xs"
+          >
+            <Focus className="w-4 h-4 text-accent" />
+            Launch Focus Mode
+          </Button>
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => navigate('/inbox')}
+            className="gap-2"
+          >
+            <Mail className="w-4 h-4" />
+            Open Inbox ({unreadCount} unread)
+          </Button>
+        </div>
       </motion.div>
 
-      {/* ── Metric Cards ────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {metrics.map((m, i) => (
+      {/* ── AI DAILY EXECUTIVE BRIEFING BANNER ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, delay: 0.05 }}
+        className="card p-6 border-l-4 border-l-accent relative overflow-hidden bg-gradient-to-r from-white via-white to-accent/[0.03]"
+      >
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2 flex-1">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-accent" />
+              <span className="text-xs font-bold text-accent uppercase tracking-wider">
+                AI Daily Briefing
+              </span>
+              <span className="text-[11px] text-txt-secondary/60">
+                · Updated just now
+              </span>
+            </div>
+            <p className="text-base md:text-lg font-medium text-txt-primary leading-relaxed">
+              "{briefingHeadline}"
+            </p>
+            <div className="flex items-center gap-4 text-xs text-txt-secondary pt-1 flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-red-500" />
+                <strong>{active.filter((c) => c.priority === 'high').length}</strong> High Priority
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-amber-500" />
+                <strong>{clientCount}</strong> Client Decisions Needed
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-blue-500" />
+                <strong>{assistantCount}</strong> Ready for Assistant Action
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                <strong>{meetingEmails.length}</strong> Meeting Coordinates
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <button
+              onClick={() => navigate('/focus')}
+              className="px-4 py-2.5 rounded-xl bg-accent text-white text-xs font-semibold hover:bg-accent-hover transition-all flex items-center gap-2 shadow-accent/20 shadow-sm"
+            >
+              Start Focus Session
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* ── KEY METRIC TILES (REFINED EDITORIAL TOKENS) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          {
+            label: 'Total Emails',
+            value: totalEmails,
+            sub: 'Active threads',
+            link: '/inbox',
+            icon: Mail,
+            color: 'text-txt-primary',
+            badge: '+3 today',
+          },
+          {
+            label: 'Action Required',
+            value: requiresAction,
+            sub: 'Pending reply or decision',
+            link: '/inbox?filter=action',
+            icon: AlertCircle,
+            color: 'text-red-600',
+            badge: 'Needs Attention',
+          },
+          {
+            label: 'Client Approvals',
+            value: clientCount,
+            sub: 'Executive sign-off required',
+            link: '/client',
+            icon: UserCheck,
+            color: 'text-amber-600',
+            badge: 'High Impact',
+          },
+          {
+            label: 'Assistant Queue',
+            value: assistantCount,
+            sub: 'Replies ready to dispatch',
+            link: '/inbox?filter=assistant',
+            icon: Clock,
+            color: 'text-blue-600',
+            badge: 'Routine Ops',
+          },
+        ].map((m, i) => (
           <motion.div
             key={m.label}
             custom={i}
@@ -323,296 +363,290 @@ export default function Dashboard() {
             initial="hidden"
             animate="show"
             onClick={() => navigate(m.link)}
-            className="relative rounded-xl p-5 shadow-sm cursor-pointer hover:border-[#6558E8]/40 hover:shadow-md transition-all"
-            style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAF1' }}
+            className="card p-5 cursor-pointer hover:border-accent/40 group transition-all"
           >
-            <div className={`absolute top-4 right-4 w-10 h-10 rounded-lg flex items-center justify-center ${m.iconBg}`}>
-              <m.Icon className={`w-5 h-5 ${m.iconColor}`} />
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-medium text-txt-secondary">{m.label}</span>
+              <m.icon className={`w-4 h-4 ${m.color}`} />
             </div>
-            <p className="text-2xl font-bold" style={{ color: '#20243A' }}>
-              {m.value}
-            </p>
-            <p className="text-sm mt-1" style={{ color: '#777D91' }}>
-              {m.label}
-            </p>
-            <p className="text-xs mt-2 flex items-center gap-1" style={{ color: '#22C55E' }}>
-              <TrendingUp className="w-3 h-3" />
-              {m.delta}
-            </p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl md:text-3xl font-bold text-txt-primary tracking-tight">
+                {m.value}
+              </span>
+              <span className="text-[11px] text-txt-secondary/70">
+                {m.sub}
+              </span>
+            </div>
           </motion.div>
         ))}
       </div>
 
-      {/* ── Two-Column: Priority Inbox + AI Briefing ──── */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-        {/* LEFT — Priority Inbox (3/5 = 60%) */}
-        <motion.div
-          className="lg:col-span-3 rounded-xl shadow-sm"
-          style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAF1' }}
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.45, delay: 0.25 }}
-        >
-          <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: '1px solid #E9EAF1' }}>
-            <h2 className="text-lg font-semibold" style={{ color: '#20243A' }}>
-              Priority Inbox
-            </h2>
+      {/* ── MAIN 2-COLUMN SECTION: PRIORITY ACTION QUEUE & DECISION RADAR ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* LEFT COLUMN: PRIORITY ACTION QUEUE (7 of 12) */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <h2 className="text-base font-bold text-txt-primary">Priority Inbox · Action Queue</h2>
+              <p className="text-xs text-txt-secondary">High-urgency items needing immediate handling or routing</p>
+            </div>
             <button
               onClick={() => navigate('/inbox')}
-              className="text-sm font-medium flex items-center gap-1 hover:underline"
-              style={{ color: '#6558E8' }}
+              className="text-xs text-accent font-semibold flex items-center gap-1 hover:underline"
             >
-              View All <ArrowRight className="w-4 h-4" />
+              View Full Inbox <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
-          <ul className="divide-y" style={{ borderColor: '#E9EAF1' }}>
-            {prioritySorted.map((conv) => {
-              const sender =
-                conv.messages[conv.messages.length - 1]?.from ??
-                conv.messages[0]?.from;
-              const senderName = sender?.name ?? 'Unknown';
+          <div className="card overflow-hidden divide-y divide-border/70">
+            {priorityQueue.map((conv) => {
+              const sender = conv.messages[conv.messages.length - 1]?.from ?? conv.messages[0]?.from;
+              const senderName = sender?.name ?? 'Contact';
               const unread = hasUnread(conv);
 
               return (
-                <li
+                <div
                   key={conv.id}
-                  onClick={() => handleSelectConversation(conv.id)}
-                  className="flex items-start gap-3 px-6 py-3.5 cursor-pointer transition-colors hover:bg-gray-50/60"
+                  onClick={() => handleOpenConv(conv.id)}
+                  className="p-4 hover:bg-canvas/60 transition-colors cursor-pointer group"
                 >
-                  {/* avatar */}
-                  <div
-                    className="flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center text-xs font-semibold text-white"
-                    style={{ backgroundColor: avatarColor(senderName) }}
-                  >
-                    {initials(senderName)}
-                  </div>
-
-                  {/* content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-sm truncate ${unread ? 'font-semibold' : 'font-medium'}`}
-                        style={{ color: '#20243A' }}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white flex-shrink-0 mt-0.5"
+                        style={{ backgroundColor: avatarColor(senderName) }}
                       >
-                        {senderName}
-                      </span>
+                        {initials(senderName)}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[13px] truncate ${unread ? 'font-bold text-txt-primary' : 'font-medium text-txt-primary'}`}>
+                            {senderName}
+                          </span>
+                          <span className="text-[11px] text-txt-secondary">
+                            · {formatDistanceToNow(new Date(conv.lastActivity), { addSuffix: true })}
+                          </span>
+                          {conv.priority === 'high' && (
+                            <span className="w-1.5 h-1.5 rounded-full bg-red-500 flex-shrink-0" title="High Priority" />
+                          )}
+                        </div>
 
-                      {/* priority dot */}
-                      {conv.priority === 'high' && (
-                        <span className="w-2 h-2 rounded-full bg-red-500 flex-shrink-0" />
-                      )}
-                      {conv.priority === 'medium' && (
-                        <span className="w-2 h-2 rounded-full bg-yellow-400 flex-shrink-0" />
-                      )}
+                        <p className={`text-[13px] truncate ${unread ? 'font-semibold text-txt-primary' : 'text-txt-primary'}`}>
+                          {conv.subject}
+                        </p>
+                        <p className="text-xs text-txt-secondary line-clamp-1 mt-0.5">
+                          {preview(conv)}
+                        </p>
+
+                        <div className="mt-2 flex items-center gap-2 flex-wrap">
+                          <Badge variant={conv.classification} />
+                          <span className="text-[11px] text-accent font-medium bg-accent/[0.06] px-2 py-0.5 rounded">
+                            Action: {conv.aiInsights.suggestedAction}
+                          </span>
+                        </div>
+                      </div>
                     </div>
 
-                    <p
-                      className={`text-sm truncate ${unread ? 'font-semibold' : ''}`}
-                      style={{ color: '#20243A' }}
-                    >
-                      {conv.subject}
-                    </p>
-                    <p className="text-xs truncate mt-0.5" style={{ color: '#777D91' }}>
-                      {preview(conv)}
-                    </p>
+                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={(e: React.MouseEvent) => {
+                          e.stopPropagation();
+                          handleOpenConv(conv.id);
+                        }}
+                        className="text-xs py-1 px-2.5 opacity-90 group-hover:opacity-100"
+                      >
+                        Review
+                      </Button>
+                    </div>
                   </div>
-
-                  {/* right side */}
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span className="text-[11px] whitespace-nowrap" style={{ color: '#777D91' }}>
-                      {formatDistanceToNow(new Date(conv.lastActivity), { addSuffix: true })}
-                    </span>
-                    <Badge variant={conv.classification}>
-                      {conv.classification}
-                    </Badge>
-                  </div>
-                </li>
+                </div>
               );
             })}
 
-            {prioritySorted.length === 0 && (
-              <li className="px-6 py-10 text-center text-sm" style={{ color: '#777D91' }}>
-                No conversations yet
-              </li>
+            {priorityQueue.length === 0 && (
+              <div className="p-8 text-center text-sm text-txt-secondary">
+                <CheckCircle2 className="w-8 h-8 text-success mx-auto mb-2" />
+                No priority action items. You are caught up!
+              </div>
             )}
-          </ul>
-        </motion.div>
-
-        {/* RIGHT — AI Daily Briefing (2/5 = 40%) */}
-        <motion.div
-          className="lg:col-span-2 rounded-xl shadow-sm"
-          style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAF1' }}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.45, delay: 0.3 }}
-        >
-          <div className="flex items-center gap-2 px-6 py-4" style={{ borderBottom: '1px solid #E9EAF1' }}>
-            <Sparkles className="w-5 h-5" style={{ color: '#6558E8' }} />
-            <h2 className="text-lg font-semibold" style={{ color: '#20243A' }}>
-              AI Daily Briefing
-            </h2>
           </div>
 
-          <div className="px-6 py-4 space-y-5 text-sm" style={{ color: '#20243A' }}>
-            {/* Key Developments */}
-            <div>
-              <h3 className="font-semibold mb-1.5">Key Developments</h3>
-              <ul className="space-y-1 list-disc list-inside" style={{ color: '#777D91' }}>
-                {keyDevelopments.map((d, i) => (
-                  <li key={i}>{d}</li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Counts */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg p-3" style={{ backgroundColor: '#FFF3DE' }}>
-                <p className="text-lg font-bold" style={{ color: '#D97706' }}>
-                  {clientCount}
-                </p>
-                <p className="text-xs" style={{ color: '#92400E' }}>
-                  Needs Client Attention
-                </p>
+          {/* UPCOMING MEETINGS WIDGET */}
+          <div className="card p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-accent" />
+                <h3 className="text-sm font-bold text-txt-primary">Scheduling Signals & Syncs</h3>
               </div>
-              <div className="rounded-lg p-3" style={{ backgroundColor: '#E9F1FF' }}>
-                <p className="text-lg font-bold" style={{ color: '#3B82F6' }}>
-                  {assistantCount}
-                </p>
-                <p className="text-xs" style={{ color: '#1E40AF' }}>
-                  Pending Replies
-                </p>
-              </div>
+              <button
+                onClick={() => navigate('/meetings')}
+                className="text-xs text-accent font-medium hover:underline"
+              >
+                Calendar View
+              </button>
             </div>
 
-            {/* Upcoming */}
-            <div>
-              <h3 className="font-semibold mb-1">Upcoming</h3>
-              <p className="text-xs" style={{ color: '#777D91' }}>
-                {meetingEmails.length > 0
-                  ? `${meetingEmails.length} meeting-related email${meetingEmails.length > 1 ? 's' : ''}: ${meetingEmails.slice(0, 2).map((m) => `"${m.subject}"`).join(', ')}`
-                  : 'No upcoming meetings detected'}
-              </p>
-            </div>
-
-            {/* Recommended Action */}
-            <div className="rounded-lg p-3" style={{ backgroundColor: '#F2EAFE' }}>
-              <h3 className="font-semibold text-xs mb-1" style={{ color: '#6558E8' }}>
-                Recommended Action
-              </h3>
-              <p className="text-xs" style={{ color: '#4C1D95' }}>
-                {recommendedAction}
-              </p>
-            </div>
-
-            {/* Classification Chart */}
-            {distData.length > 0 && (
-              <div>
-                <h3 className="font-semibold mb-2">Classification Breakdown</h3>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={distData}
-                          dataKey="value"
-                          nameKey="name"
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={22}
-                          outerRadius={38}
-                          strokeWidth={2}
-                          stroke="#FFFFFF"
-                        >
-                          {distData.map((d) => (
-                            <Cell key={d.name} fill={d.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip
-                          formatter={(value: number) => [`${value}`, 'Emails']}
-                          contentStyle={{
-                            fontSize: 12,
-                            borderRadius: 8,
-                            border: '1px solid #E9EAF1',
-                          }}
-                        />
-                      </PieChart>
-                    </ResponsiveContainer>
+            <div className="space-y-2.5">
+              {meetingEmails.map((m) => (
+                <div
+                  key={m.id}
+                  onClick={() => handleOpenConv(m.id)}
+                  className="flex items-center justify-between p-3 rounded-xl bg-canvas/70 hover:bg-canvas transition-colors cursor-pointer border border-border/50 text-xs"
+                >
+                  <div className="min-w-0 flex-1 pr-3">
+                    <p className="font-semibold text-txt-primary truncate">{m.subject}</p>
+                    <p className="text-txt-secondary text-[11px] truncate mt-0.5">
+                      {m.messages[0]?.from.name} · {m.aiInsights.suggestedAction}
+                    </p>
                   </div>
-                  <div className="flex flex-col gap-1.5 text-xs" style={{ color: '#777D91' }}>
-                    {distData.map((d) => (
-                      <div key={d.name} className="flex items-center gap-2">
-                        <span
-                          className="w-2.5 h-2.5 rounded-full inline-block"
-                          style={{ backgroundColor: d.color }}
-                        />
-                        {d.name} ({d.value})
-                      </div>
-                    ))}
-                  </div>
+                  <Badge variant="assistant" className="flex-shrink-0">Schedule</Badge>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
           </div>
-        </motion.div>
-      </div>
-
-      {/* ── Recent Activity ─────────────────────────────── */}
-      <motion.div
-        className="rounded-xl shadow-sm"
-        style={{ backgroundColor: '#FFFFFF', border: '1px solid #E9EAF1' }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, delay: 0.4 }}
-      >
-        <div className="px-6 py-4" style={{ borderBottom: '1px solid #E9EAF1' }}>
-          <h2 className="text-lg font-semibold" style={{ color: '#20243A' }}>
-            Recent Activity
-          </h2>
         </div>
 
-        <ul className="divide-y" style={{ borderColor: '#E9EAF1' }}>
-          {recentActivity.map((item, i) => {
-            const ItemIcon = item.icon;
-            return (
-              <motion.li
-                key={item.id}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                animate="show"
-                className="flex items-center gap-4 px-6 py-3"
-              >
-                <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: '#F7F8FC' }}
-                >
-                  <ItemIcon className="w-4 h-4" style={{ color: '#6558E8' }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm" style={{ color: '#20243A' }}>
-                    {item.text}
-                    {item.badge && (
-                      <span className="ml-1.5 inline-block">
-                        <Badge variant={item.badge}>{item.badge}</Badge>
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <span className="text-xs flex-shrink-0" style={{ color: '#777D91' }}>
-                  {formatDistanceToNow(new Date(item.time), { addSuffix: true })}
-                </span>
-              </motion.li>
-            );
-          })}
+        {/* RIGHT COLUMN: CLIENT DECISION RADAR & CLASSIFICATION (5 of 12) */}
+        <div className="lg:col-span-5 space-y-4">
+          {/* CLIENT DECISIONS RADAR */}
+          <div className="flex items-center justify-between px-1">
+            <div>
+              <h2 className="text-base font-bold text-txt-primary">Pending Client Decisions</h2>
+              <p className="text-xs text-txt-secondary">Decisions requiring executive sign-off</p>
+            </div>
+            <button
+              onClick={() => navigate('/client')}
+              className="text-xs text-amber-700 font-semibold hover:underline"
+            >
+              Open Client Portal
+            </button>
+          </div>
 
-          {recentActivity.length === 0 && (
-            <li className="px-6 py-8 text-center text-sm" style={{ color: '#777D91' }}>
-              No recent activity
-            </li>
-          )}
-        </ul>
-      </motion.div>
+          <div className="card p-4 space-y-3">
+            {clientPending.map((conv) => (
+              <div
+                key={conv.id}
+                className="p-3.5 rounded-xl border border-amber-200/70 bg-amber-50/40 hover:bg-amber-50/70 transition-all"
+              >
+                <div className="flex items-start justify-between gap-2 mb-1.5">
+                  <span className="text-xs font-bold text-amber-900 truncate flex-1">
+                    {conv.subject}
+                  </span>
+                  <span className="text-[10px] text-amber-700 font-medium whitespace-nowrap bg-amber-100/80 px-1.5 py-0.5 rounded">
+                    Sign-Off Required
+                  </span>
+                </div>
+                <p className="text-xs text-amber-800/80 line-clamp-2 mb-3">
+                  {conv.aiInsights.reasoning}
+                </p>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-amber-200/50">
+                  <button
+                    onClick={(e) => handleDelegate(conv.id, e)}
+                    className="px-2.5 py-1 text-[11px] font-medium text-txt-secondary hover:text-txt-primary bg-white rounded-lg border border-border transition-colors"
+                  >
+                    Delegate to Asst
+                  </button>
+                  <button
+                    onClick={(e) => handleApprove(conv.id, e)}
+                    className="px-2.5 py-1 text-[11px] font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors flex items-center gap-1"
+                  >
+                    <Check className="w-3 h-3" />
+                    Approve
+                  </button>
+                </div>
+              </div>
+            ))}
+
+            {clientPending.length === 0 && (
+              <div className="p-6 text-center text-xs text-txt-secondary">
+                No decisions currently awaiting client sign-off.
+              </div>
+            )}
+          </div>
+
+          {/* CLASSIFICATION BREAKDOWN */}
+          <div className="card p-5">
+            <h3 className="text-sm font-bold text-txt-primary mb-3">Inbox Classification Intelligence</h3>
+            <div className="flex items-center gap-4">
+              <div className="w-28 h-28 flex-shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={distData}
+                      dataKey="value"
+                      nameKey="name"
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={28}
+                      outerRadius={46}
+                      strokeWidth={2}
+                      stroke="#FFFFFF"
+                    >
+                      {distData.map((d) => (
+                        <Cell key={d.name} fill={d.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip
+                      formatter={(value: number) => [`${value}`, 'Emails']}
+                      contentStyle={{
+                        fontSize: 12,
+                        borderRadius: 8,
+                        border: '1px solid #E9E9EC',
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+
+              <div className="flex flex-col gap-2 text-xs flex-1">
+                {distData.map((d) => (
+                  <div key={d.name} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="w-2.5 h-2.5 rounded-full inline-block"
+                        style={{ backgroundColor: d.color }}
+                      />
+                      <span className="text-txt-secondary">{d.name}</span>
+                    </div>
+                    <span className="font-semibold text-txt-primary">{d.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* RECENT AUDIT ACTIVITY */}
+          <div className="card p-5">
+            <h3 className="text-sm font-bold text-txt-primary mb-3">Recent Communication Feed</h3>
+            <div className="space-y-3">
+              {recentActivity.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={() => handleOpenConv(item.id)}
+                  className="flex items-start justify-between gap-3 text-xs cursor-pointer hover:bg-canvas p-1.5 rounded-lg transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium text-txt-primary truncate">{item.title}</p>
+                    <p className="text-[11px] text-txt-secondary truncate mt-0.5">
+                      From {item.sender}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <Badge variant={item.classification} />
+                    <p className="text-[10px] text-txt-secondary/60 mt-1">
+                      {formatDistanceToNow(new Date(item.time), { addSuffix: true })}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

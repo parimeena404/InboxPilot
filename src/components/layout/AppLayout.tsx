@@ -7,12 +7,14 @@ import { Toast } from '@/components/ui/Toast';
 import useStore from '@/store/useStore';
 
 const routeTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
+  '/dashboard': 'Command Center',
+  '/focus': 'Focus Mode',
   '/inbox': 'Inbox',
   '/meetings': 'Meetings',
   '/ai-assistant': 'AI Assistant',
   '/accounts': 'Connected Accounts',
   '/settings': 'Settings',
+  '/client': 'Executive Client Portal',
 };
 
 const filterTitles: Record<string, string> = {
@@ -45,21 +47,21 @@ const AppLayout: React.FC = () => {
     ) : undefined;
 
   return (
-    <div className="min-h-screen bg-[#F7F8FC]">
+    <div className="min-h-screen bg-canvas">
       {/* Sidebar */}
       <Sidebar />
 
       {/* Main content area */}
       <div
         className={`flex flex-col min-h-screen transition-all duration-200 ml-0 ${
-          sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-[260px]'
+          sidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-[248px]'
         }`}
       >
         {/* TopBar */}
         <TopBar title={pageTitle} breadcrumb={breadcrumb} />
 
         {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>

@@ -5,6 +5,7 @@ import Landing from '@/pages/Landing'
 import Onboarding from '@/pages/Onboarding'
 import Dashboard from '@/pages/Dashboard'
 import Inbox from '@/pages/Inbox'
+import FocusMode from '@/pages/FocusMode'
 import EmailDetail from '@/pages/EmailDetail'
 import ClientWorkspace from '@/pages/ClientWorkspace'
 import Meetings from '@/pages/Meetings'
@@ -16,14 +17,6 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, onboardingComplete } = useStore()
   if (!isAuthenticated) return <Navigate to="/" replace />
   if (!onboardingComplete) return <Navigate to="/onboarding" replace />
-  return <>{children}</>
-}
-
-function RoleRoute({ children, allowedRole }: { children: React.ReactNode; allowedRole: 'assistant' | 'client' }) {
-  const { role } = useStore()
-  if (role !== allowedRole) {
-    return <Navigate to={role === 'client' ? '/client' : '/dashboard'} replace />
-  }
   return <>{children}</>
 }
 
@@ -52,6 +45,7 @@ export default function App() {
           </ProtectedRoute>
         }>
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/focus" element={<FocusMode />} />
           <Route path="/inbox" element={<Inbox />} />
           <Route path="/email/:id" element={<EmailDetail />} />
           <Route path="/meetings" element={<Meetings />} />

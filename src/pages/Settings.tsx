@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useState } from 'react';
+import { motion } from 'framer-motion';
 import {
   User,
   Sliders,
@@ -12,9 +12,9 @@ import {
   Key,
   Globe,
   Save,
-} from 'lucide-react'
-import { useStore } from '@/store/useStore'
-import { Button, Avatar } from '@/components/ui'
+} from 'lucide-react';
+import { useStore } from '@/store/useStore';
+import { Button, Avatar } from '@/components/ui';
 
 const Settings: React.FC = () => {
   const {
@@ -23,145 +23,111 @@ const Settings: React.FC = () => {
     setRole,
     resetDemo,
     showToastMessage,
-  } = useStore()
+  } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'notifications' | 'ai' | 'about'>('profile')
+  const [activeTab, setActiveTab] = useState<'profile' | 'workspace' | 'notifications' | 'ai' | 'about'>('profile');
 
   // Form states
-  const [confidenceThreshold, setConfidenceThreshold] = useState(0.85)
-  const [autoClassify, setAutoClassify] = useState(true)
-  const [dailyBriefing, setDailyBriefing] = useState(true)
-  const [emailAlerts, setEmailAlerts] = useState(true)
-  const [soundEnabled, setSoundEnabled] = useState(false)
-  const [workspaceName, setWorkspaceName] = useState('Sterling Executive Office')
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.85);
+  const [autoClassify, setAutoClassify] = useState(true);
+  const [dailyBriefing, setDailyBriefing] = useState(true);
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState('Sterling Executive Office');
 
   const handleSave = () => {
-    showToastMessage('Preferences saved successfully', 'success')
-  }
+    showToastMessage('Preferences saved successfully', 'success');
+  };
 
   const handleReset = () => {
-    resetDemo()
-    showToastMessage('Demo state reset to initial factory data', 'info')
-  }
+    resetDemo();
+    showToastMessage('Demo state reset to initial factory data', 'info');
+  };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 md:p-6 pb-20">
-      <div className="mb-6">
-        <h1 className="text-xl md:text-2xl font-bold text-txt-primary">Settings & Preferences</h1>
-        <p className="text-sm text-txt-secondary mt-0.5">
-          Configure AI intelligence thresholds, user workspace permissions, and notification dispatch rules.
+    <div className="max-w-4xl mx-auto p-4 md:p-8 pb-20 bg-canvas">
+      <div className="mb-6 pb-4 border-b border-border">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-[11px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-full">
+            Workspace Configuration
+          </span>
+          <span className="text-xs text-txt-secondary">
+            Settings & Permissions
+          </span>
+        </div>
+        <h1 className="text-2xl md:text-3xl font-bold text-ink heading-serif">Settings & Preferences</h1>
+        <p className="text-xs text-txt-secondary mt-0.5">
+          Configure autonomous triage thresholds, executive routing policies, and account credentials.
         </p>
       </div>
 
       <div className="flex flex-col md:flex-row gap-6">
         {/* Navigation tabs */}
-        <div className="w-full md:w-56 flex-shrink-0 space-y-1">
+        <div className="w-full md:w-52 flex-shrink-0 space-y-1">
           {[
             { id: 'profile', label: 'User Profile', icon: User },
-            { id: 'workspace', label: 'Workspace Rules', icon: Sliders },
+            { id: 'workspace', label: 'Workspace', icon: Sliders },
             { id: 'notifications', label: 'Notifications', icon: Bell },
-            { id: 'ai', label: 'AI Engine Settings', icon: Cpu },
-            { id: 'about', label: 'About & Reset', icon: Info },
+            { id: 'ai', label: 'AI Intelligence', icon: Cpu },
+            { id: 'about', label: 'About & Factory Reset', icon: Info },
           ].map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all text-left ${
                   isActive
-                    ? 'bg-primary text-white shadow-xs'
-                    : 'text-txt-secondary hover:text-txt-primary hover:bg-white'
+                    ? 'bg-accent text-white shadow-xs'
+                    : 'text-txt-secondary hover:bg-white hover:text-ink'
                 }`}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-4 h-4 flex-shrink-0" />
                 <span>{tab.label}</span>
               </button>
-            )
+            );
           })}
         </div>
 
-        {/* Content area */}
-        <div className="flex-1 bg-surface rounded-2xl border border-border p-6 shadow-xs">
+        {/* Tab content */}
+        <div className="flex-1 bg-white rounded-2xl border border-border p-6 shadow-card">
           {activeTab === 'profile' && (
             <div className="space-y-6">
-              <div>
-                <h3 className="font-bold text-base text-txt-primary">User Profile</h3>
-                <p className="text-xs text-txt-secondary mt-0.5">
-                  Your identity when reviewing, classifying, and drafting email communications.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-4 pt-2">
+              <h2 className="text-sm font-bold text-ink">User Profile Details</h2>
+              <div className="flex items-center gap-4">
                 <Avatar name={user?.name || 'Alex Morgan'} size="lg" />
                 <div>
-                  <div className="font-bold text-sm text-txt-primary">{user?.name}</div>
-                  <div className="text-xs text-txt-secondary">{user?.email}</div>
-                  <div className="mt-1">
-                    <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-primary/10 text-primary uppercase tracking-wider">
-                      Active Role: {role}
-                    </span>
-                  </div>
+                  <h3 className="font-bold text-xs md:text-sm text-ink">{user?.name}</h3>
+                  <p className="text-xs text-txt-secondary">{user?.email}</p>
+                  <span className="inline-block mt-1 text-[10px] font-bold text-accent bg-accent/10 px-2 py-0.5 rounded capitalize">
+                    {role} Role
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-4 pt-4 border-t border-border">
+              <div className="space-y-4 pt-4 border-t border-border text-xs">
                 <div>
-                  <label className="text-xs font-semibold text-txt-primary block mb-1">
-                    Display Name
-                  </label>
+                  <label className="font-semibold text-txt-secondary block mb-1">Full Name</label>
                   <input
                     type="text"
-                    defaultValue={user?.name || 'Alex Morgan'}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border text-sm text-txt-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    defaultValue={user?.name}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-canvas/40 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent/20"
                   />
                 </div>
-
                 <div>
-                  <label className="text-xs font-semibold text-txt-primary block mb-1">
-                    Primary Email
-                  </label>
+                  <label className="font-semibold text-txt-secondary block mb-1">Email Address</label>
                   <input
                     type="email"
-                    defaultValue={user?.email || 'alex.morgan@company.com'}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border text-sm text-txt-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    defaultValue={user?.email}
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-canvas/40 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent/20"
                   />
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold text-txt-primary block mb-1">
-                    Default Workspace Mode
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => setRole('assistant')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        role === 'assistant'
-                          ? 'border-primary bg-primary/5 text-primary'
-                          : 'border-border text-txt-secondary hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="font-bold text-xs">Assistant Mode</div>
-                      <div className="text-[11px] text-txt-secondary mt-0.5">Full inbox triage and drafting</div>
-                    </button>
-                    <button
-                      onClick={() => setRole('client')}
-                      className={`p-3 rounded-xl border text-left transition-all ${
-                        role === 'client'
-                          ? 'border-primary bg-primary/5 text-primary'
-                          : 'border-border text-txt-secondary hover:border-gray-300'
-                      }`}
-                    >
-                      <div className="font-bold text-xs">Client Mode</div>
-                      <div className="text-[11px] text-txt-secondary mt-0.5">Minimal decision-only feed</div>
-                    </button>
-                  </div>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-border flex justify-end">
                 <Button variant="primary" size="sm" onClick={handleSave} className="text-xs">
+                  <Save className="w-3.5 h-3.5" />
                   Save Changes
                 </Button>
               </div>
@@ -170,52 +136,47 @@ const Settings: React.FC = () => {
 
           {activeTab === 'workspace' && (
             <div className="space-y-6">
-              <div>
-                <h3 className="font-bold text-base text-txt-primary">Workspace Configuration</h3>
-                <p className="text-xs text-txt-secondary mt-0.5">
-                  Rules for delegating communications between assistants and clients.
-                </p>
-              </div>
-
-              <div className="space-y-4">
+              <h2 className="text-sm font-bold text-ink">Workspace Operations</h2>
+              <div className="space-y-4 text-xs">
                 <div>
-                  <label className="text-xs font-semibold text-txt-primary block mb-1">
-                    Workspace Name
-                  </label>
+                  <label className="font-semibold text-txt-secondary block mb-1">Desk Name</label>
                   <input
                     type="text"
                     value={workspaceName}
                     onChange={(e) => setWorkspaceName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-border text-sm text-txt-primary focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    className="w-full px-3 py-2 rounded-xl border border-border bg-canvas/40 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-accent/20"
                   />
                 </div>
-
-                <div className="p-4 rounded-xl border border-border bg-gray-50/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-xs font-bold text-txt-primary">Shared Thread State</div>
-                      <div className="text-[11px] text-txt-secondary">
-                        Client approvals update the assistant inbox in real-time.
-                      </div>
-                    </div>
-                    <input type="checkbox" defaultChecked className="rounded text-primary focus:ring-primary h-4 w-4" />
-                  </div>
-
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <div>
-                      <div className="text-xs font-bold text-txt-primary">Auto-Archive on Client Approval</div>
-                      <div className="text-[11px] text-txt-secondary">
-                        Automatically move resolved decisions to completed archives.
-                      </div>
-                    </div>
-                    <input type="checkbox" defaultChecked className="rounded text-primary focus:ring-primary h-4 w-4" />
+                <div>
+                  <label className="font-semibold text-txt-secondary block mb-1">Active Executive Workspace View</label>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setRole('assistant')}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-semibold ${
+                        role === 'assistant'
+                          ? 'border-accent bg-accent/10 text-accent'
+                          : 'border-border text-txt-secondary'
+                      }`}
+                    >
+                      Assistant View
+                    </button>
+                    <button
+                      onClick={() => setRole('client')}
+                      className={`px-3 py-1.5 rounded-xl border text-xs font-semibold ${
+                        role === 'client'
+                          ? 'border-accent bg-accent/10 text-accent'
+                          : 'border-border text-txt-secondary'
+                      }`}
+                    >
+                      Client Decision View
+                    </button>
                   </div>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-border flex justify-end">
                 <Button variant="primary" size="sm" onClick={handleSave} className="text-xs">
-                  Save Configuration
+                  Save Settings
                 </Button>
               </div>
             </div>
@@ -223,48 +184,38 @@ const Settings: React.FC = () => {
 
           {activeTab === 'notifications' && (
             <div className="space-y-6">
-              <div>
-                <h3 className="font-bold text-base text-txt-primary">Notification Preferences</h3>
-                <p className="text-xs text-txt-secondary mt-0.5">
-                  Control how alerts, daily briefings, and high-priority flags are delivered.
-                </p>
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-3.5 rounded-xl border border-border">
-                  <div>
-                    <div className="text-xs font-bold text-txt-primary">Morning AI Briefing Email</div>
-                    <div className="text-[11px] text-txt-secondary">
-                      Send daily 8:00 AM summary of pending decisions and meetings.
-                    </div>
-                  </div>
+              <h2 className="text-sm font-bold text-ink">Notification Rules</h2>
+              <div className="space-y-3 text-xs">
+                <label className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-canvas cursor-pointer">
                   <input
                     type="checkbox"
                     checked={dailyBriefing}
                     onChange={(e) => setDailyBriefing(e.target.checked)}
-                    className="rounded text-primary focus:ring-primary h-4 w-4"
+                    className="rounded text-accent focus:ring-accent"
                   />
-                </div>
-
-                <div className="flex items-center justify-between p-3.5 rounded-xl border border-border">
                   <div>
-                    <div className="text-xs font-bold text-txt-primary">Instant Push on High-Priority Flags</div>
-                    <div className="text-[11px] text-txt-secondary">
-                      Notify immediately when an email is classified as urgent client decision.
-                    </div>
+                    <p className="font-bold text-ink">Autonomous Daily Executive Briefing</p>
+                    <p className="text-txt-secondary text-[11px]">Generate high-level communication synthesis every morning.</p>
                   </div>
+                </label>
+
+                <label className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-canvas cursor-pointer">
                   <input
                     type="checkbox"
                     checked={emailAlerts}
                     onChange={(e) => setEmailAlerts(e.target.checked)}
-                    className="rounded text-primary focus:ring-primary h-4 w-4"
+                    className="rounded text-accent focus:ring-accent"
                   />
-                </div>
+                  <div>
+                    <p className="font-bold text-ink">High-Urgency Client Notifications</p>
+                    <p className="text-txt-secondary text-[11px]">Immediate alert on term sheets, signatures, and board filings.</p>
+                  </div>
+                </label>
               </div>
 
               <div className="pt-4 border-t border-border flex justify-end">
                 <Button variant="primary" size="sm" onClick={handleSave} className="text-xs">
-                  Save Preferences
+                  Save Notifications
                 </Button>
               </div>
             </div>
@@ -272,90 +223,69 @@ const Settings: React.FC = () => {
 
           {activeTab === 'ai' && (
             <div className="space-y-6">
-              <div>
-                <h3 className="font-bold text-base text-txt-primary">AI Engine & Classification Tuning</h3>
-                <p className="text-xs text-txt-secondary mt-0.5">
-                  Tune confidence cutoffs and automatic categorization behaviors.
-                </p>
-              </div>
-
-              <div className="space-y-5">
+              <h2 className="text-sm font-bold text-ink">Autonomous Classification Model Settings</h2>
+              <div className="space-y-4 text-xs">
                 <div>
-                  <div className="flex items-center justify-between text-xs font-semibold mb-2">
-                    <span className="text-txt-primary">Confidence Cutoff Threshold</span>
-                    <span className="text-primary font-bold">{Math.round(confidenceThreshold * 100)}%</span>
+                  <div className="flex justify-between mb-1">
+                    <span className="font-semibold text-txt-secondary">Triage Confidence Threshold</span>
+                    <span className="font-bold text-accent">{Math.round(confidenceThreshold * 100)}%</span>
                   </div>
                   <input
                     type="range"
                     min="0.5"
-                    max="0.99"
-                    step="0.01"
+                    max="0.95"
+                    step="0.05"
                     value={confidenceThreshold}
                     onChange={(e) => setConfidenceThreshold(parseFloat(e.target.value))}
-                    className="w-full accent-primary"
+                    className="w-full accent-accent"
                   />
                   <p className="text-[11px] text-txt-secondary mt-1">
-                    Emails categorized with confidence below this threshold are routed to "Needs Review" for human verification.
+                    Emails below this confidence level are routed to "Needs Review" for human verification.
                   </p>
                 </div>
 
-                <div className="p-4 rounded-xl bg-primary/5 border border-primary/20 space-y-2">
-                  <div className="text-xs font-bold text-primary">Transparent Rule Engine</div>
-                  <p className="text-[11px] text-txt-secondary leading-relaxed">
-                    InboxPilot combines heuristic intent parsing, authority extraction, and signature detection. No customer data leaves this demo environment.
-                  </p>
+                <div className="pt-2">
+                  <label className="flex items-center gap-3 p-3 rounded-xl border border-border hover:bg-canvas cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={autoClassify}
+                      onChange={(e) => setAutoClassify(e.target.checked)}
+                      className="rounded text-accent focus:ring-accent"
+                    />
+                    <div>
+                      <p className="font-bold text-ink">Autonomous Pipeline Active</p>
+                      <p className="text-txt-secondary text-[11px]">Continuously classify new threads upon webhook ingest.</p>
+                    </div>
+                  </label>
                 </div>
               </div>
 
               <div className="pt-4 border-t border-border flex justify-end">
                 <Button variant="primary" size="sm" onClick={handleSave} className="text-xs">
-                  Update AI Engine
+                  Save AI Rules
                 </Button>
               </div>
             </div>
           )}
 
           {activeTab === 'about' && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-bold text-base text-txt-primary">System Information</h3>
-                <p className="text-xs text-txt-secondary mt-0.5">
-                  Prototype build details and sample data controls.
-                </p>
+            <div className="space-y-6 text-xs">
+              <h2 className="text-sm font-bold text-ink">InboxPilot System Information</h2>
+              <div className="p-4 rounded-xl bg-canvas border border-border space-y-2">
+                <p><strong>Version:</strong> 2.4.0 (Production Release)</p>
+                <p><strong>Environment:</strong> Netlify Edge Deploy (React 18 + Vite + Tailwind)</p>
+                <p><strong>Engine:</strong> Rule-based Mock AI Intelligence + Four-Tier Classification</p>
+                <p><strong>Storage:</strong> LocalStorage Persisted State (28 Sample Conversations)</p>
               </div>
 
-              <div className="space-y-2 text-xs">
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-txt-secondary">Product:</span>
-                  <span className="font-semibold text-txt-primary">InboxPilot Enterprise SaaS</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-txt-secondary">Frontend Engine:</span>
-                  <span className="font-semibold text-txt-primary">React 18 + Vite + TypeScript + Tailwind</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-txt-secondary">Version:</span>
-                  <span className="font-semibold text-txt-primary">v1.0.0 (Production Release)</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-txt-secondary">Local Persistence:</span>
-                  <span className="font-semibold text-txt-primary">Zustand LocalStorage Middleware</span>
-                </div>
-              </div>
-
-              <div className="pt-4 border-t border-border">
-                <h4 className="text-xs font-bold text-txt-primary mb-1">Reset Sample Data</h4>
-                <p className="text-xs text-txt-secondary mb-3">
-                  Restore all 28 emails, notifications, and classification tags to their original evaluation demo state.
+              <div className="p-4 rounded-xl border border-red-200 bg-red-50/50">
+                <h3 className="font-bold text-red-900 mb-1">Factory Reset Demo State</h3>
+                <p className="text-red-700 text-[11px] mb-3 leading-relaxed">
+                  Reset all mock conversations, unread states, client approvals, and replies to initial demo seed data.
                 </p>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleReset}
-                  className="inline-flex items-center gap-1.5 text-xs text-red-600 border-red-200 hover:bg-red-50"
-                >
+                <Button variant="danger" size="sm" onClick={handleReset} className="text-xs gap-1.5">
                   <RotateCcw className="w-3.5 h-3.5" />
-                  Reset Demo State
+                  Reset to Factory Data
                 </Button>
               </div>
             </div>
@@ -363,7 +293,7 @@ const Settings: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Settings
+export default Settings;

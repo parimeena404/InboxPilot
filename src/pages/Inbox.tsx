@@ -16,6 +16,14 @@ import {
   Square,
   Tag,
   ChevronDown,
+  CheckCircle2,
+  Clock,
+  ShieldAlert,
+  HelpCircle,
+  FileText,
+  User,
+  ArrowRight,
+  Info,
 } from 'lucide-react';
 import useStore from '@/store/useStore';
 import type { Conversation, Classification } from '@/types';
@@ -44,14 +52,14 @@ function timeAgo(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
-function preview(body: string, len = 50): string {
+function preview(body: string, len = 65): string {
   const stripped = body.replace(/\n/g, ' ').trim();
   return stripped.length > len ? stripped.slice(0, len) + '…' : stripped;
 }
 
 const priorityDot: Record<string, string> = {
   high: 'bg-red-500',
-  medium: 'bg-yellow-400',
+  medium: 'bg-amber-400',
   low: '',
 };
 
@@ -72,22 +80,21 @@ type Tab = 'all' | 'unread' | 'important' | 'action';
 type SortBy = 'newest' | 'oldest' | 'priority';
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
-  { value: 'newest', label: 'Newest' },
-  { value: 'oldest', label: 'Oldest' },
+  { value: 'newest', label: 'Newest First' },
+  { value: 'oldest', label: 'Oldest First' },
   { value: 'priority', label: 'Priority' },
 ];
 
 const CLASSIFICATION_FILTER: { value: string; label: string }[] = [
   { value: 'all', label: 'All Classifications' },
-  { value: 'assistant', label: 'Assistant' },
-  { value: 'client', label: 'Client' },
-  { value: 'noreply', label: 'No Reply' },
-  { value: 'review', label: 'Review' },
+  { value: 'assistant', label: 'Assistant to Reply' },
+  { value: 'client', label: 'Client to Reply' },
+  { value: 'noreply', label: 'No Reply Needed' },
+  { value: 'review', label: 'Needs Review' },
 ];
 
 const priorityWeight: Record<string, number> = { high: 0, medium: 1, low: 2 };
 
-// URL filter → quick filter mapping
 function mapUrlFilter(f: string | null): { tab?: Tab; classification?: string } {
   if (!f) return {};
   switch (f) {
@@ -101,7 +108,7 @@ function mapUrlFilter(f: string | null): { tab?: Tab; classification?: string } 
     case 'review':
       return { classification: f };
     case 'archived':
-      return {}; // handled separately
+      return {};
     default:
       return {};
   }
@@ -139,6 +146,7 @@ const Inbox: React.FC = () => {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmArchive, setConfirmArchive] = useState(false);
+  const [showDecisionTrail, setShowDecisionTrail] = useState(true);
 
   // Sync with URL query parameter changes
   useEffect(() => {
@@ -187,7 +195,7 @@ const Inbox: React.FC = () => {
       list = list.filter((c) => c.classification === classificationFilter);
     }
 
-    // search: combine local input and global TopBar search
+    // search
     const q = (searchQuery || storeSearchQuery).toLowerCase().trim();
     if (q) {
       list = list.filter(
@@ -251,7 +259,6 @@ const Inbox: React.FC = () => {
   const handleSelect = useCallback(
     (id: string) => {
       selectConversation(id);
-      // mark read on select
       const conv = conversations.find((c) => c.id === id);
       if (conv && conv.messages.some((m) => !m.isRead)) {
         markAsRead(id);
@@ -311,26 +318,55 @@ const Inbox: React.FC = () => {
     setReplyText(reply);
   }, [tone, selectedConversation]);
 
-  // ── confidence bar color ──
   function confidenceColor(v: number) {
-    if (v >= 0.85) return 'bg-green-500';
-    if (v >= 0.7) return 'bg-yellow-400';
+    if (v >= 0.85) return 'bg-emerald-500';
+    if (v >= 0.7) return 'bg-amber-400';
     return 'bg-red-400';
   }
 
-  // ───────────────────────── render ──────────────────────────
+  // Generate decision trail evidence
+  const decisionTrail = useMemo(() => {
+    if (!selectedConversation) return null;
+    const insights = selectedConversation.aiInsights;
+    const isClient = selectedConversation.classification === 'client';
+    const isAssistant = selectedConversation.classification === 'assistant';
+
+    return {
+      intent: isClient
+        ? 'Executive Sign-Off & Capital Decision'
+        : isAssistant
+        ? 'Operational Scheduling & Information Dispatch'
+        : selectedConversation.classification === 'noreply'
+        ? 'Informational Receipt / Automated Notification'
+        : 'Ambiguous Intent - Requires Human Discretion',
+      signals: [
+        `High semantic relevance to ${isClient ? 'financial/governance policy' : 'administrative scheduling'}`,
+        `Direct recipient authority matches ${isClient ? 'David Sterling (Executive)' : 'Alex Morgan (Assistant)'}`,
+        `Urgency score evaluated at ${Math.round(insights.confidence * 100)}% threshold`,
+      ],
+      keyPhrases: [
+        `"${selectedConversation.subject}"`,
+        `"${insights.suggestedAction}"`,
+      ],
+      personalDecisionRequired: isClient,
+      suggestedAction: insights.suggestedAction,
+      confidence: insights.confidence,
+      originalClassification: selectedConversation.classification,
+      humanAuditStatus: 'Automated AI classification verified by rule set v2.4',
+    };
+  }, [selectedConversation]);
 
   return (
-    <div className="flex h-full overflow-hidden">
+    <div className="flex h-full overflow-hidden bg-canvas">
       {/* ────── Email List Panel ────── */}
       <div
-        className={`flex flex-col border-r border-[#E9EAF1] bg-white ${
-          selectedConversation ? 'w-[55%]' : 'w-full'
+        className={`flex flex-col border-r border-border bg-white ${
+          selectedConversation ? 'w-[52%]' : 'w-full'
         } transition-all duration-200`}
       >
         {/* Toolbar */}
-        <div className="flex flex-col gap-3 p-4 border-b border-[#E9EAF1]">
-          <div className="flex items-center gap-3 flex-wrap">
+        <div className="flex flex-col gap-2.5 p-3.5 border-b border-border bg-white">
+          <div className="flex items-center gap-2 flex-wrap justify-between">
             <SegmentedControl
               options={tabOptions}
               value={activeTab}
@@ -342,17 +378,17 @@ const Inbox: React.FC = () => {
             <SearchInput
               value={searchQuery}
               onChange={setSearchQuery}
-              placeholder="Search emails…"
-              className="flex-1 max-w-sm"
+              placeholder="Filter current view…"
+              className="flex-1 max-w-xs text-xs"
             />
 
             {/* Sort */}
             <DropdownMenu
               trigger={
-                <Button variant="secondary" size="sm" className="gap-1.5">
-                  <ArrowUpDown className="w-3.5 h-3.5" />
+                <Button variant="secondary" size="sm" className="gap-1.5 text-xs py-1.5">
+                  <ArrowUpDown className="w-3 h-3 text-txt-secondary" />
                   {SORT_OPTIONS.find((s) => s.value === sortBy)?.label}
-                  <ChevronDown className="w-3 h-3" />
+                  <ChevronDown className="w-2.5 h-2.5 text-txt-secondary" />
                 </Button>
               }
               items={SORT_OPTIONS.map((s) => ({
@@ -364,10 +400,10 @@ const Inbox: React.FC = () => {
             {/* Classification filter */}
             <DropdownMenu
               trigger={
-                <Button variant="secondary" size="sm" className="gap-1.5">
-                  <Filter className="w-3.5 h-3.5" />
+                <Button variant="secondary" size="sm" className="gap-1.5 text-xs py-1.5">
+                  <Filter className="w-3 h-3 text-txt-secondary" />
                   {CLASSIFICATION_FILTER.find((c) => c.value === classificationFilter)?.label}
-                  <ChevronDown className="w-3 h-3" />
+                  <ChevronDown className="w-2.5 h-2.5 text-txt-secondary" />
                 </Button>
               }
               items={CLASSIFICATION_FILTER.map((c) => ({
@@ -384,6 +420,7 @@ const Inbox: React.FC = () => {
                 setSelectMode(!selectMode);
                 setSelectedIds(new Set());
               }}
+              className="p-1.5"
             >
               <CheckSquare className="w-3.5 h-3.5" />
             </Button>
@@ -392,13 +429,13 @@ const Inbox: React.FC = () => {
           {/* Bulk actions bar */}
           {selectMode && selectedIds.size > 0 && (
             <motion.div
-              className="flex items-center gap-2"
-              initial={{ opacity: 0, y: -8 }}
+              className="flex items-center gap-2 pt-1 border-t border-border/60"
+              initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
             >
               <button
                 onClick={selectAll}
-                className="flex items-center gap-1.5 text-xs text-[#777D91] hover:text-[#20243A]"
+                className="flex items-center gap-1.5 text-xs text-txt-secondary hover:text-txt-primary"
               >
                 {selectedIds.size === filtered.length ? (
                   <CheckSquare className="w-3.5 h-3.5" />
@@ -407,7 +444,7 @@ const Inbox: React.FC = () => {
                 )}
                 {selectedIds.size === filtered.length ? 'Deselect all' : 'Select all'}
               </button>
-              <span className="text-xs text-[#777D91]">
+              <span className="text-xs text-txt-secondary">
                 {selectedIds.size} selected
               </span>
               <Button variant="secondary" size="sm" onClick={bulkMarkRead}>
@@ -423,7 +460,7 @@ const Inbox: React.FC = () => {
         </div>
 
         {/* Email list */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto divide-y divide-border/60">
           {filtered.length === 0 ? (
             <EmptyState
               icon={Mail}
@@ -449,49 +486,49 @@ const Inbox: React.FC = () => {
         </div>
       </div>
 
-      {/* ────── Conversation Preview Panel ────── */}
+      {/* ────── Conversation Detail & AI Decision Trail Panel ────── */}
       <AnimatePresence mode="wait">
         {selectedConversation ? (
           <motion.div
             key={selectedConversation.id}
-            className="w-[45%] flex flex-col bg-[#F7F8FC] overflow-hidden"
-            initial={{ opacity: 0, x: 20 }}
+            className="w-[48%] flex flex-col bg-canvas overflow-hidden border-l border-border"
+            initial={{ opacity: 0, x: 15 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
+            exit={{ opacity: 0, x: 15 }}
             transition={{ duration: 0.2 }}
           >
             {/* Preview Header */}
-            <div className="flex items-start justify-between gap-3 p-5 bg-white border-b border-[#E9EAF1]">
+            <div className="flex items-start justify-between gap-3 p-4 bg-white border-b border-border shadow-xs">
               <div className="min-w-0 flex-1">
-                <h2 className="text-lg font-semibold text-[#20243A] truncate">
-                  {selectedConversation.subject}
-                </h2>
-                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <Badge variant={selectedConversation.classification}>
                     {selectedConversation.classification}
                   </Badge>
                   {selectedConversation.priority !== 'low' && (
                     <span
                       className={`w-2 h-2 rounded-full ${priorityDot[selectedConversation.priority]}`}
+                      title={`${selectedConversation.priority} priority`}
                     />
                   )}
-                  <span className="text-xs text-[#777D91]">
-                    {selectedConversation.messages.length} message
-                    {selectedConversation.messages.length !== 1 && 's'}
+                  <span className="text-[11px] text-txt-secondary">
+                    {selectedConversation.messages.length} message{selectedConversation.messages.length !== 1 && 's'}
                   </span>
                 </div>
+                <h2 className="text-base font-bold text-txt-primary truncate">
+                  {selectedConversation.subject}
+                </h2>
               </div>
 
               <div className="flex items-center gap-1 flex-shrink-0">
                 <button
                   onClick={() => toggleStar(selectedConversation.id)}
-                  className="p-1.5 rounded-lg hover:bg-[#F7F8FC] transition-colors"
+                  className="p-1.5 rounded-lg hover:bg-canvas transition-colors"
                 >
                   <Star
-                    className={`w-4.5 h-4.5 ${
+                    className={`w-4 h-4 ${
                       selectedConversation.isStarred
-                        ? 'fill-yellow-400 text-yellow-400'
-                        : 'text-[#777D91]'
+                        ? 'fill-amber-400 text-amber-400'
+                        : 'text-txt-secondary/60'
                     }`}
                   />
                 </button>
@@ -502,13 +539,14 @@ const Inbox: React.FC = () => {
                     archiveConversation(selectedConversation.id);
                     showToastMessage('Conversation archived', 'success');
                   }}
+                  className="p-1.5"
                 >
                   <Archive className="w-4 h-4" />
                 </Button>
                 <DropdownMenu
                   trigger={
-                    <button className="p-1.5 rounded-lg hover:bg-[#F7F8FC] transition-colors">
-                      <MoreHorizontal className="w-4.5 h-4.5 text-[#777D91]" />
+                    <button className="p-1.5 rounded-lg hover:bg-canvas transition-colors">
+                      <MoreHorizontal className="w-4 h-4 text-txt-secondary" />
                     </button>
                   }
                   items={[
@@ -543,109 +581,128 @@ const Inbox: React.FC = () => {
             </div>
 
             {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto">
-              {/* AI Insights Card */}
-              <div className="m-4 p-4 bg-white rounded-xl border border-[#E9EAF1]">
-                <div className="flex items-center gap-2 mb-3">
-                  <Sparkles className="w-4 h-4 text-[#6558E8]" />
-                  <span className="text-sm font-semibold text-[#20243A]">AI Insights</span>
-                </div>
-
-                {/* Confidence meter */}
-                <div className="mb-3">
-                  <div className="flex items-center justify-between text-xs mb-1">
-                    <span className="text-[#777D91]">Confidence</span>
-                    <span className="font-medium text-[#20243A]">
-                      {Math.round(selectedConversation.aiInsights.confidence * 100)}%
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              {/* ── AI DECISION TRAIL COMPONENT ── */}
+              <div className="card p-4 border-l-3 border-l-accent bg-white shadow-xs">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-accent" />
+                    <span className="text-xs font-bold text-txt-primary uppercase tracking-wider">
+                      AI Decision Trail & Reasoning
                     </span>
                   </div>
-                  <div className="h-1.5 w-full bg-[#E9EAF1] rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${confidenceColor(
-                        selectedConversation.aiInsights.confidence,
-                      )}`}
-                      style={{
-                        width: `${selectedConversation.aiInsights.confidence * 100}%`,
-                      }}
-                    />
+                  <button
+                    onClick={() => setShowDecisionTrail(!showDecisionTrail)}
+                    className="text-[11px] text-accent font-semibold hover:underline"
+                  >
+                    {showDecisionTrail ? 'Collapse' : 'Expand'}
+                  </button>
+                </div>
+
+                {showDecisionTrail && decisionTrail && (
+                  <div className="space-y-3 pt-1 text-xs">
+                    {/* Visual Step-by-Step Reasoner */}
+                    <div className="space-y-2 border-l-2 border-accent/20 ml-2 pl-3">
+                      <div className="relative">
+                        <span className="absolute -left-[19px] top-1 w-2.5 h-2.5 rounded-full bg-accent ring-2 ring-white" />
+                        <p className="text-[11px] font-semibold text-txt-secondary uppercase">Detected Intent</p>
+                        <p className="font-semibold text-txt-primary mt-0.5">{decisionTrail.intent}</p>
+                      </div>
+
+                      <div className="relative pt-1">
+                        <span className="absolute -left-[19px] top-2 w-2.5 h-2.5 rounded-full bg-accent/60 ring-2 ring-white" />
+                        <p className="text-[11px] font-semibold text-txt-secondary uppercase">Contextual Signals & AI Reasoning</p>
+                        <p className="text-txt-primary mt-0.5">{selectedConversation.aiInsights.reasoning}</p>
+                        <ul className="mt-1 space-y-0.5 text-txt-secondary">
+                          {decisionTrail.signals.map((sig, i) => (
+                            <li key={i}>• {sig}</li>
+                          ))}
+                        </ul>
+                      </div>
+
+                      <div className="relative pt-1">
+                        <span className="absolute -left-[19px] top-2 w-2.5 h-2.5 rounded-full bg-accent/40 ring-2 ring-white" />
+                        <p className="text-[11px] font-semibold text-txt-secondary uppercase">Suggested Action</p>
+                        <p className="text-txt-primary mt-0.5 font-medium">
+                          {selectedConversation.aiInsights.suggestedAction}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Confidence Meter */}
+                    <div className="bg-canvas p-2.5 rounded-lg border border-border/60">
+                      <div className="flex items-center justify-between text-[11px] mb-1">
+                        <span className="font-medium text-txt-secondary">
+                          Classification Confidence (<Badge variant={selectedConversation.aiInsights.classification} />)
+                        </span>
+                        <span className="font-bold text-txt-primary">
+                          {Math.round(selectedConversation.aiInsights.confidence * 100)}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${confidenceColor(selectedConversation.aiInsights.confidence)}`}
+                          style={{ width: `${selectedConversation.aiInsights.confidence * 100}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Quick Reclassification Toolbar */}
+                    <div className="pt-2 border-t border-border/60">
+                      <p className="text-[10px] font-bold text-txt-secondary uppercase tracking-wider mb-1.5">
+                        Human Verification Override:
+                      </p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {(['assistant', 'client', 'noreply', 'review'] as Classification[]).map((cls) => (
+                          <button
+                            key={cls}
+                            onClick={() => {
+                              reclassify(selectedConversation.id, cls);
+                              showToastMessage(`Reclassified as ${cls}`, 'success');
+                            }}
+                            className={`text-[11px] px-2 py-0.5 rounded border transition-all ${
+                              selectedConversation.classification === cls
+                                ? 'border-accent bg-accent/10 font-bold text-accent'
+                                : 'border-border bg-white text-txt-secondary hover:text-txt-primary'
+                            }`}
+                          >
+                            <Badge variant={cls} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-
-                <div className="flex items-center gap-2 mb-2">
-                  <Badge variant={selectedConversation.aiInsights.classification}>
-                    {selectedConversation.aiInsights.classification}
-                  </Badge>
-                </div>
-
-                <p className="text-xs text-[#777D91] mb-2">
-                  {selectedConversation.aiInsights.reasoning}
-                </p>
-                <div className="text-xs space-y-1">
-                  <p>
-                    <span className="font-medium text-[#20243A]">Suggested: </span>
-                    <span className="text-[#777D91]">
-                      {selectedConversation.aiInsights.suggestedAction}
-                    </span>
-                  </p>
-                  <p>
-                    <span className="font-medium text-[#20243A]">Summary: </span>
-                    <span className="text-[#777D91]">
-                      {selectedConversation.aiInsights.summary}
-                    </span>
-                  </p>
-                </div>
-
-                {/* Quick Classification Switcher */}
-                <div className="mt-3 pt-3 border-t border-[#E9EAF1]">
-                  <p className="text-[11px] font-semibold text-[#777D91] mb-2 uppercase tracking-wider">
-                    Change Classification:
-                  </p>
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {(['assistant', 'client', 'noreply', 'review'] as Classification[]).map((cls) => (
-                      <button
-                        key={cls}
-                        onClick={() => {
-                          reclassify(selectedConversation.id, cls);
-                          showToastMessage(`Reclassified as ${cls}`, 'success');
-                        }}
-                        className={`text-xs px-2.5 py-1 rounded-lg transition-all border ${
-                          selectedConversation.classification === cls
-                            ? 'border-[#6558E8] bg-[#6558E8]/10 font-bold shadow-xs'
-                            : 'border-[#E9EAF1] bg-white opacity-70 hover:opacity-100 hover:border-gray-300'
-                        }`}
-                      >
-                        <Badge variant={cls} />
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                )}
               </div>
 
               {/* Message Thread */}
-              <div className="px-4 pb-4 space-y-1">
+              <div className="space-y-2.5">
+                <p className="text-[11px] font-bold text-txt-secondary uppercase tracking-wider px-1">
+                  Thread History
+                </p>
                 {selectedConversation.messages.map((msg, idx) => (
                   <div
                     key={msg.id}
-                    className={`p-4 rounded-xl ${
-                      idx % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFD]'
-                    } border border-[#E9EAF1]`}
+                    className={`p-3.5 rounded-xl ${
+                      idx % 2 === 0 ? 'bg-white' : 'bg-canvas/80'
+                    } border border-border shadow-xs`}
                   >
                     <div className="flex items-center gap-2.5 mb-2">
                       <Avatar name={msg.from.name} size="sm" />
                       <div className="min-w-0 flex-1">
-                        <span className="text-sm font-medium text-[#20243A]">
+                        <span className="text-[13px] font-semibold text-txt-primary">
                           {msg.from.name}
                         </span>
-                        <span className="text-xs text-[#777D91] ml-2">
+                        <span className="text-[11px] text-txt-secondary ml-2">
                           {timeAgo(msg.timestamp)}
                         </span>
                       </div>
                     </div>
-                    <p className="text-sm text-[#20243A] whitespace-pre-line leading-relaxed">
+                    <p className="text-[13px] text-txt-primary whitespace-pre-line leading-relaxed">
                       {msg.body}
                     </p>
                     {msg.attachments && msg.attachments.length > 0 && (
-                      <div className="flex items-center gap-1.5 mt-2 text-xs text-[#777D91]">
+                      <div className="flex items-center gap-1.5 mt-2.5 text-xs text-txt-secondary bg-canvas p-1.5 rounded-lg border border-border/50">
                         <Paperclip className="w-3.5 h-3.5" />
                         {msg.attachments.map((a) => a.name).join(', ')}
                       </div>
@@ -656,53 +713,56 @@ const Inbox: React.FC = () => {
             </div>
 
             {/* Reply Composer */}
-            <div className="border-t border-[#E9EAF1] bg-white p-4">
+            <div className="border-t border-border bg-white p-3.5 shadow-panel">
               {selectedConversation.clientName && (
-                <p className="text-xs text-[#777D91] mb-2">
-                  Reply as <span className="font-medium text-[#20243A]">{selectedConversation.clientName}</span>
+                <p className="text-[11px] text-txt-secondary mb-1.5">
+                  Drafting response for <span className="font-semibold text-txt-primary">{selectedConversation.clientName}</span>
                 </p>
               )}
               <textarea
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
-                placeholder="Write a reply…"
+                placeholder="Draft simulated response…"
                 rows={3}
-                className="w-full resize-none rounded-xl border border-[#E9EAF1] p-3 text-sm text-[#20243A] placeholder-[#777D91] focus:outline-none focus:ring-2 focus:ring-[#6558E8]/30 focus:border-[#6558E8] transition-colors"
+                className="w-full resize-none rounded-xl border border-border p-3 text-xs text-txt-primary placeholder-txt-secondary/50 focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-all"
               />
-              <div className="flex items-center justify-between mt-2">
-                <div className="flex items-center gap-1.5">
-                  {/* Tone selector */}
+              <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+                <div className="flex items-center gap-1">
                   {TONES.map((t) => (
                     <button
                       key={t}
                       onClick={() => setTone(t)}
-                      className={`px-2.5 py-1 text-xs rounded-lg border transition-colors ${
+                      className={`px-2 py-0.5 text-[11px] rounded-md border transition-all ${
                         tone === t
-                          ? 'border-[#6558E8] bg-[#6558E8]/5 text-[#6558E8] font-medium'
-                          : 'border-[#E9EAF1] text-[#777D91] hover:bg-[#F7F8FC]'
+                          ? 'border-accent bg-accent/10 text-accent font-semibold'
+                          : 'border-border text-txt-secondary hover:bg-canvas'
                       }`}
                     >
                       {t}
                     </button>
                   ))}
-                  <Button variant="ghost" size="sm" onClick={handleAiSuggest} className="ml-1">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    AI Suggest
-                  </Button>
+                  <button
+                    onClick={handleAiSuggest}
+                    className="ml-1 text-[11px] font-medium text-accent hover:underline flex items-center gap-1"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    AI Auto-Draft
+                  </button>
                 </div>
-                <Button variant="primary" size="sm" onClick={handleSend}>
-                  <Send className="w-3.5 h-3.5" />
-                  Send
+
+                <Button variant="primary" size="sm" onClick={handleSend} className="text-xs py-1.5 px-3">
+                  <Send className="w-3 h-3" />
+                  Send Simulated Reply
                 </Button>
               </div>
             </div>
           </motion.div>
         ) : (
-          <div className="hidden lg:flex w-[45%] items-center justify-center bg-[#F7F8FC]">
+          <div className="hidden lg:flex w-[48%] items-center justify-center bg-canvas">
             <EmptyState
               icon={Mail}
-              title="Select a conversation"
-              description="Choose an email from the list to view its details."
+              title="Select an email conversation"
+              description="Review threads, inspect AI classification reasoning, or draft replies."
             />
           </div>
         )}
@@ -744,36 +804,34 @@ const EmailRow: React.FC<EmailRowProps> = React.memo(
     );
 
     return (
-      <motion.div
-        layout
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className={`flex items-center gap-3 px-4 py-3 cursor-pointer border-b border-[#E9EAF1] transition-colors group ${
+      <div
+        className={`flex items-start gap-2.5 px-3.5 py-3 cursor-pointer transition-colors group ${
           isSelected
-            ? 'bg-[#6558E8]/5'
-            : 'hover:bg-[#F7F8FC]'
+            ? 'bg-accent/[0.06] border-l-2 border-l-accent'
+            : isUnread
+            ? 'bg-white hover:bg-canvas font-medium'
+            : 'hover:bg-canvas/60 text-txt-secondary'
         }`}
         onClick={onClick}
       >
-        {/* Checkbox / Unread dot */}
+        {/* Checkbox / Dot */}
         {selectMode ? (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onToggleCheck();
             }}
-            className="flex-shrink-0"
+            className="flex-shrink-0 mt-0.5"
           >
             {isChecked ? (
-              <CheckSquare className="w-4 h-4 text-[#6558E8]" />
+              <CheckSquare className="w-3.5 h-3.5 text-accent" />
             ) : (
-              <Square className="w-4 h-4 text-[#777D91]" />
+              <Square className="w-3.5 h-3.5 text-txt-secondary" />
             )}
           </button>
         ) : (
-          <div className="w-2 flex-shrink-0">
-            {isUnread && <div className="w-2 h-2 rounded-full bg-[#6558E8]" />}
+          <div className="w-2 flex-shrink-0 mt-1.5">
+            {isUnread && <div className="w-1.5 h-1.5 rounded-full bg-accent" />}
           </div>
         )}
 
@@ -782,52 +840,59 @@ const EmailRow: React.FC<EmailRowProps> = React.memo(
 
         {/* Content */}
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-1 mb-0.5">
             <span
-              className={`text-sm truncate ${
-                isUnread ? 'font-semibold text-[#20243A]' : 'text-[#20243A]'
+              className={`text-[13px] truncate ${
+                isUnread ? 'font-bold text-txt-primary' : 'font-medium text-txt-primary'
               }`}
             >
               {lastMsg.from.name}
             </span>
-            <span className="text-xs text-[#777D91] flex-shrink-0">
+            <span className="text-[11px] text-txt-secondary/70 flex-shrink-0">
               {timeAgo(conv.lastActivity)}
             </span>
           </div>
+
           <p
-            className={`text-sm truncate ${
-              isUnread ? 'font-semibold text-[#20243A]' : 'text-[#20243A]'
+            className={`text-xs truncate ${
+              isUnread ? 'font-semibold text-txt-primary' : 'text-txt-primary/90'
             }`}
           >
             {conv.subject}
           </p>
-          <p className="text-xs text-[#777D91] truncate">{preview(lastMsg.body)}</p>
+
+          <p className="text-[11px] text-txt-secondary line-clamp-1 mt-0.5">
+            {preview(lastMsg.body)}
+          </p>
+
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+            <Badge variant={conv.classification} />
+            {conv.priority === 'high' && (
+              <span className="text-[10px] text-red-600 font-semibold bg-red-50 border border-red-200 px-1.5 py-0.2 rounded">
+                High
+              </span>
+            )}
+            {hasAttachments && (
+              <Paperclip className="w-3 h-3 text-txt-secondary/60" />
+            )}
+          </div>
         </div>
 
-        {/* Meta */}
-        <div className="flex items-center gap-2 flex-shrink-0">
-          {conv.priority !== 'low' && (
-            <span className={`w-2 h-2 rounded-full ${priorityDot[conv.priority]}`} />
-          )}
-          <Badge variant={conv.classification}>{conv.classification}</Badge>
-          {hasAttachments && (
-            <Paperclip className="w-3.5 h-3.5 text-[#777D91]" />
-          )}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onToggleStar();
-            }}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5"
-          >
-            <Star
-              className={`w-4 h-4 ${
-                conv.isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-[#777D91]'
-              }`}
-            />
-          </button>
-        </div>
-      </motion.div>
+        {/* Star */}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleStar();
+          }}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-0.5 flex-shrink-0 mt-0.5"
+        >
+          <Star
+            className={`w-3.5 h-3.5 ${
+              conv.isStarred ? 'fill-amber-400 text-amber-400 opacity-100' : 'text-txt-secondary/50'
+            }`}
+          />
+        </button>
+      </div>
     );
   },
 );

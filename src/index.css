@@ -6,47 +6,117 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-bg-main text-txt-primary;
+    @apply bg-canvas text-txt-primary;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection {
+    background-color: rgba(99, 91, 219, 0.15);
+    color: #202231;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-primary text-white px-4 py-2.5 rounded-xl font-medium text-sm
-           hover:bg-primary-hover transition-colors duration-150
-           focus:outline-none focus:ring-2 focus:ring-primary/30;
+    @apply bg-accent text-white px-4 py-2.5 rounded-xl font-medium text-sm
+           hover:bg-accent-hover transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-accent/30
+           shadow-sm hover:shadow-accent;
   }
   .btn-secondary {
     @apply bg-white text-txt-primary px-4 py-2.5 rounded-xl font-medium text-sm
-           border border-border hover:bg-gray-50 transition-colors duration-150
-           focus:outline-none focus:ring-2 focus:ring-primary/20;
+           border border-border hover:bg-canvas transition-all duration-150
+           focus:outline-none focus:ring-2 focus:ring-accent/20;
   }
   .btn-ghost {
     @apply text-txt-secondary px-3 py-2 rounded-xl font-medium text-sm
-           hover:bg-gray-100 transition-colors duration-150;
+           hover:bg-canvas hover:text-txt-primary transition-all duration-150;
   }
   .card {
-    @apply bg-surface rounded-2xl border border-border p-5;
+    @apply bg-surface rounded-2xl border border-border shadow-card transition-shadow duration-200;
+  }
+  .card:hover {
+    @apply shadow-card-hover;
+  }
+  .card-static {
+    @apply bg-surface rounded-2xl border border-border shadow-card;
   }
   .badge {
     @apply inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium;
   }
   .input-field {
     @apply w-full px-3.5 py-2.5 rounded-xl border border-border bg-white text-sm
-           placeholder:text-txt-secondary/60
-           focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary
+           placeholder:text-txt-secondary/50
+           focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent
            transition-all duration-150;
+  }
+  .section-title {
+    @apply text-[11px] font-semibold text-txt-secondary/60 uppercase tracking-[0.08em];
+  }
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-xl border border-white/40;
   }
 }
 
 /* Custom scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+::-webkit-scrollbar-thumb { background: #d4d4d8; border-radius: 100px; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
 
-/* Smooth transitions */
-.sidebar-transition {
-  transition: width 200ms ease, transform 200ms ease;
+/* Focus visible */
+*:focus-visible {
+  outline: 2px solid rgba(99, 91, 219, 0.4);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
+
+/* Smooth sidebar transition */
+.sidebar-transition {
+  transition: width 200ms cubic-bezier(0.4, 0, 0.2, 1), transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Gradient text utility */
+.gradient-text {
+  background: linear-gradient(135deg, #635BDB 0%, #A7B8FF 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Editorial serif heading utility */
+.heading-serif {
+  font-family: 'DM Serif Display', Georgia, serif;
+  letter-spacing: -0.01em;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* AI shimmer effect */
+.ai-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(99, 91, 219, 0.04) 25%,
+    rgba(99, 91, 219, 0.1) 50%,
+    rgba(99, 91, 219, 0.04) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+
+/* Line clamp */
+.line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

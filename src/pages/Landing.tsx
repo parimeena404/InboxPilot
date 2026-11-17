@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import {
   Mail,
   Brain,
@@ -16,82 +16,84 @@ import {
   Shield,
   Zap,
   BarChart3,
-  Tag,
-} from 'lucide-react'
-import useStore from '@/store/useStore'
+  Focus,
+  Check,
+  Layers,
+} from 'lucide-react';
+import useStore from '@/store/useStore';
 
 const fadeIn = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: i * 0.1, duration: 0.6, ease: 'easeOut' },
+    transition: { delay: i * 0.08, duration: 0.5, ease: [0.4, 0, 0.2, 1] },
   }),
-}
+};
 
 const staggerContainer = {
   hidden: {},
-  visible: { transition: { staggerChildren: 0.15 } },
-}
+  visible: { transition: { staggerChildren: 0.12 } },
+};
 
 export default function Landing() {
-  const navigate = useNavigate()
-  const login = useStore((s) => s.login)
-  const [scrolled, setScrolled] = useState(false)
+  const navigate = useNavigate();
+  const login = useStore((s) => s.login);
+  const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20)
-    window.addEventListener('scroll', onScroll)
-    return () => window.removeEventListener('scroll', onScroll)
-  }, [])
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const handleTryDemo = () => {
-    login('assistant', true)
-    navigate('/dashboard')
-  }
+    login('assistant', true);
+    navigate('/dashboard');
+  };
 
   const scrollTo = (id: string) => {
-    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-  }
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   return (
-    <div className="min-h-screen bg-white font-[Inter]">
+    <div className="min-h-screen bg-canvas font-sans selection:bg-accent/15 selection:text-ink">
       {/* ── Sticky Navbar ── */}
       <nav
-        className={`fixed inset-x-0 top-0 z-50 transition-all duration-300 ${
+        className={`fixed inset-x-0 top-0 z-50 transition-all duration-200 ${
           scrolled
-            ? 'bg-white/90 backdrop-blur-lg shadow-sm border-b border-[#E9EAF1]'
+            ? 'bg-white/85 backdrop-blur-xl shadow-xs border-b border-border'
             : 'bg-transparent'
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#6558E8]">
-              <Mail className="h-5 w-5 text-white" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-white shadow-accent/20 shadow-sm">
+              <Mail className="h-4 w-4" />
             </div>
-            <span className="text-xl font-bold text-[#20243A]">InboxPilot</span>
+            <span className="text-lg font-bold tracking-tight text-ink">InboxPilot</span>
           </div>
 
           {/* Nav links */}
           <div className="hidden items-center gap-8 md:flex">
             <button
               onClick={() => scrollTo('features')}
-              className="text-sm font-medium text-[#777D91] transition-colors hover:text-[#20243A]"
+              className="text-xs font-semibold uppercase tracking-wider text-txt-secondary transition-colors hover:text-ink"
             >
-              Features
+              Architecture
             </button>
             <button
               onClick={() => scrollTo('how-it-works')}
-              className="text-sm font-medium text-[#777D91] transition-colors hover:text-[#20243A]"
+              className="text-xs font-semibold uppercase tracking-wider text-txt-secondary transition-colors hover:text-ink"
             >
-              How it Works
+              Workflow
             </button>
             <button
               onClick={() => scrollTo('pricing')}
-              className="text-sm font-medium text-[#777D91] transition-colors hover:text-[#20243A]"
+              className="text-xs font-semibold uppercase tracking-wider text-txt-secondary transition-colors hover:text-ink"
             >
-              Pricing
+              Enterprise
             </button>
           </div>
 
@@ -99,26 +101,22 @@ export default function Landing() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate('/onboarding')}
-              className="rounded-lg border border-[#E9EAF1] bg-white px-4 py-2 text-sm font-medium text-[#20243A] transition-colors hover:bg-[#F7F8FC]"
+              className="rounded-lg border border-border bg-white px-3.5 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-canvas"
             >
               Sign In
             </button>
             <button
               onClick={() => navigate('/onboarding')}
-              className="rounded-lg bg-[#6558E8] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#5548D5]"
+              className="rounded-lg bg-accent px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-accent-hover hover:shadow-accent"
             >
-              Get Started
+              Get Started Free
             </button>
           </div>
         </div>
       </nav>
 
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-32">
-        {/* Gradient blobs */}
-        <div className="pointer-events-none absolute -top-40 -right-40 h-[500px] w-[500px] rounded-full bg-[#6558E8]/10 blur-[120px]" />
-        <div className="pointer-events-none absolute -bottom-40 -left-40 h-[400px] w-[400px] rounded-full bg-[#6558E8]/5 blur-[100px]" />
-
+      {/* ── Hero Section ── */}
+      <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-28">
         <div className="relative mx-auto max-w-7xl px-6 text-center">
           <motion.div
             initial="hidden"
@@ -127,203 +125,159 @@ export default function Landing() {
           >
             {/* Pill */}
             <motion.div variants={fadeIn} custom={0} className="mb-6 flex justify-center">
-              <span className="inline-flex items-center gap-2 rounded-full border border-[#E9EAF1] bg-white px-4 py-1.5 text-sm font-medium text-[#6558E8] shadow-sm">
-                <Sparkles className="h-4 w-4" />
-                AI-powered email management
+              <span className="inline-flex items-center gap-2 rounded-full border border-border bg-white px-4 py-1.5 text-xs font-semibold text-accent shadow-xs">
+                <Sparkles className="h-3.5 w-3.5" />
+                Intelligent Executive Email Management
               </span>
             </motion.div>
 
-            {/* Headline */}
+            {/* Headline with Editorial Serif */}
             <motion.h1
               variants={fadeIn}
               custom={1}
-              className="text-5xl font-bold leading-tight tracking-tight text-[#20243A] md:text-6xl"
+              className="text-5xl font-bold leading-[1.12] tracking-tight text-ink md:text-6xl lg:text-7xl heading-serif max-w-4xl mx-auto"
             >
-              Your inbox.{' '}
-              <span className="bg-gradient-to-r from-[#6558E8] to-[#8B7CF7] bg-clip-text text-transparent">
-                Under control.
-              </span>
+              Your inbox. <br className="hidden sm:inline" />
+              <span className="italic font-normal">Decisively</span> under control.
             </motion.h1>
 
             {/* Subtitle */}
             <motion.p
               variants={fadeIn}
               custom={2}
-              className="mx-auto mt-6 max-w-2xl text-lg text-[#777D91]"
+              className="mx-auto mt-6 max-w-2xl text-base md:text-lg text-txt-secondary leading-relaxed"
             >
-              AI-powered email management for personal assistants. Classify,
-              prioritize, and respond to emails intelligently.
+              Engineered for executive assistants and high-output leaders. Autonomous triage, four-tier classification, and smart delegation between assistant desk and client portal.
             </motion.p>
 
             {/* CTAs */}
             <motion.div
               variants={fadeIn}
               custom={3}
-              className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+              className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row"
             >
               <button
                 onClick={() => navigate('/onboarding')}
-                className="group flex items-center gap-2 rounded-xl bg-[#6558E8] px-8 py-3.5 text-base font-semibold text-white shadow-lg shadow-[#6558E8]/25 transition-all hover:bg-[#5548D5] hover:shadow-xl hover:shadow-[#6558E8]/30"
+                className="group flex items-center gap-2 rounded-xl bg-accent px-7 py-3 text-sm font-semibold text-white shadow-accent/25 shadow-lg transition-all hover:bg-accent-hover hover:shadow-accent"
               >
-                Get Started Free
+                Start Onboarding
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
               </button>
               <button
                 onClick={handleTryDemo}
-                className="group flex items-center gap-2 rounded-xl border border-[#E9EAF1] bg-white px-8 py-3.5 text-base font-semibold text-[#20243A] shadow-sm transition-all hover:border-[#6558E8]/30 hover:bg-[#F7F8FC]"
+                className="group flex items-center gap-2 rounded-xl border border-border bg-white px-7 py-3 text-sm font-semibold text-ink shadow-xs transition-all hover:border-accent/40 hover:bg-canvas"
               >
-                <Play className="h-4 w-4 text-[#6558E8]" />
-                Try Demo
+                <Play className="h-3.5 w-3.5 text-accent" />
+                Launch Live Demo
               </button>
             </motion.div>
           </motion.div>
 
           {/* ── Product Preview Mockup ── */}
           <motion.div
-            initial={{ opacity: 0, y: 40 }}
+            initial={{ opacity: 0, y: 35 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.8, ease: 'easeOut' }}
-            className="mx-auto mt-16 max-w-5xl"
+            transition={{ delay: 0.5, duration: 0.7, ease: [0.4, 0, 0.2, 1] }}
+            className="mx-auto mt-14 max-w-5xl"
           >
-            <div className="overflow-hidden rounded-2xl border border-[#E9EAF1] bg-white shadow-2xl shadow-[#6558E8]/10">
-              {/* Browser chrome */}
-              <div className="flex items-center gap-2 border-b border-[#E9EAF1] bg-[#F7F8FC] px-4 py-3">
-                <div className="h-3 w-3 rounded-full bg-[#FF5F57]" />
-                <div className="h-3 w-3 rounded-full bg-[#FFBD2E]" />
-                <div className="h-3 w-3 rounded-full bg-[#28CA42]" />
-                <div className="mx-auto flex h-7 w-72 items-center justify-center rounded-md bg-white px-3 text-xs text-[#777D91] border border-[#E9EAF1]">
-                  app.inboxpilot.ai/dashboard
+            <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-panel">
+              {/* Window Bar */}
+              <div className="flex items-center gap-2 border-b border-border bg-canvas/80 px-4 py-2.5">
+                <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
+                <div className="h-2.5 w-2.5 rounded-full bg-[#FFBD2E]" />
+                <div className="h-2.5 w-2.5 rounded-full bg-[#28CA42]" />
+                <div className="mx-auto flex h-6 w-80 items-center justify-center rounded-md bg-white px-3 text-[11px] text-txt-secondary border border-border/80 font-mono">
+                  app.inboxpilot.ai/command-center
                 </div>
               </div>
 
-              {/* Mini dashboard */}
-              <div className="flex">
+              {/* Mockup Dashboard Body */}
+              <div className="flex text-left">
                 {/* Mini sidebar */}
-                <div className="hidden w-48 flex-col gap-1 border-r border-[#E9EAF1] bg-[#151B2D] p-3 md:flex">
+                <div className="hidden w-48 flex-col gap-1 border-r border-border bg-sidebar p-3 md:flex">
                   <div className="mb-3 flex items-center gap-2 px-2 py-1">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#6558E8]">
+                    <div className="flex h-5 w-5 items-center justify-center rounded bg-accent">
                       <Mail className="h-3 w-3 text-white" />
                     </div>
                     <span className="text-xs font-semibold text-white">InboxPilot</span>
                   </div>
-                  {['Dashboard', 'Inbox', 'Meetings', 'AI Assistant'].map(
-                    (item, i) => (
-                      <div
-                        key={item}
-                        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-xs ${
-                          i === 0
-                            ? 'bg-white/10 font-medium text-white'
-                            : 'text-white/50'
-                        }`}
-                      >
-                        {i === 0 && <BarChart3 className="h-3 w-3" />}
-                        {i === 1 && <Mail className="h-3 w-3" />}
-                        {i === 2 && <Clock className="h-3 w-3" />}
-                        {i === 3 && <Sparkles className="h-3 w-3" />}
-                        {item}
-                      </div>
-                    )
-                  )}
+                  {[
+                    { name: 'Command Center', icon: BarChart3, active: true },
+                    { name: 'Focus Mode', icon: Focus, active: false },
+                    { name: 'Inbox (28)', icon: Mail, active: false },
+                    { name: 'Meetings', icon: Clock, active: false },
+                    { name: 'AI Copilot', icon: Sparkles, active: false },
+                  ].map((item) => (
+                    <div
+                      key={item.name}
+                      className={`flex items-center gap-2 rounded-lg px-2 py-1.5 text-[11px] font-medium ${
+                        item.active
+                          ? 'bg-accent text-white'
+                          : 'text-white/50'
+                      }`}
+                    >
+                      <item.icon className="h-3.5 w-3.5" />
+                      {item.name}
+                    </div>
+                  ))}
                 </div>
 
-                {/* Content */}
-                <div className="flex-1 p-4">
-                  {/* Stats row */}
-                  <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-                    {[
-                      { label: 'Total Emails', value: '1,284', change: '+12%', icon: Mail },
-                      { label: 'Needs Action', value: '23', change: '-8%', icon: Zap },
-                      { label: 'AI Classified', value: '98.2%', change: '+2.4%', icon: Brain },
-                      { label: 'Avg. Response', value: '14m', change: '-22%', icon: Clock },
-                    ].map((stat) => (
-                      <div
-                        key={stat.label}
-                        className="rounded-lg border border-[#E9EAF1] bg-[#F7F8FC] p-3"
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-[#777D91]">{stat.label}</span>
-                          <stat.icon className="h-3 w-3 text-[#6558E8]" />
-                        </div>
-                        <div className="mt-1 text-lg font-bold text-[#20243A]">{stat.value}</div>
-                        <span className="text-[10px] text-green-500">{stat.change}</span>
+                {/* Main mini-content */}
+                <div className="flex-1 p-5 bg-canvas/40 space-y-4">
+                  {/* Executive Briefing banner in preview */}
+                  <div className="p-3.5 rounded-xl bg-white border border-border shadow-xs flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center text-accent">
+                        <Sparkles className="w-4 h-4" />
                       </div>
-                    ))}
+                      <div>
+                        <p className="text-xs font-bold text-ink">AI Daily Briefing: Inbox under control</p>
+                        <p className="text-[11px] text-txt-secondary">3 client approvals pending · 4 assistant replies ready</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] font-semibold text-accent bg-accent/10 px-2 py-0.5 rounded">
+                      Live
+                    </span>
                   </div>
 
-                  {/* Email list */}
+                  {/* Quick emails preview */}
                   <div className="space-y-2">
                     {[
                       {
-                        from: 'Sarah Chen',
-                        subject: 'Q4 Budget Review - Needs Approval',
-                        badge: 'Client',
-                        badgeColor: 'bg-[#FFF3DE] text-amber-700',
-                        time: '2m ago',
-                        starred: true,
-                        priority: 'high',
+                        from: 'Marcus Webb (Apex Ventures)',
+                        subject: 'Series B Term Sheet Flagged for Signature',
+                        badge: 'Client to Reply',
+                        color: 'bg-amber-50 text-amber-800 border-amber-200',
+                        time: '12m ago',
                       },
                       {
-                        from: 'Marcus Webb',
-                        subject: 'Re: Team Sync - Tomorrow at 3pm?',
-                        badge: 'Assistant',
-                        badgeColor: 'bg-[#E9F1FF] text-blue-700',
-                        time: '15m ago',
-                        starred: false,
-                        priority: 'medium',
+                        from: 'Elena Rostova (Board Secretary)',
+                        subject: 'Proposed Q3 Board Meeting Coordinates',
+                        badge: 'Assistant to Reply',
+                        color: 'bg-blue-50 text-blue-800 border-blue-200',
+                        time: '45m ago',
                       },
                       {
-                        from: 'notifications@service.com',
-                        subject: 'Your invoice #4521 is ready',
-                        badge: 'No Reply',
-                        badgeColor: 'bg-[#E8F7EE] text-green-700',
-                        time: '1h ago',
-                        starred: false,
-                        priority: 'low',
+                        from: 'AWS Cloud Notifications',
+                        subject: 'Monthly Compute Billing Receipt #8820',
+                        badge: 'No Reply Needed',
+                        color: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                        time: '2h ago',
                       },
-                      {
-                        from: 'Elena Rodriguez',
-                        subject: 'Partnership Proposal - GlobalVentures',
-                        badge: 'Review',
-                        badgeColor: 'bg-[#F2EAFE] text-purple-700',
-                        time: '3h ago',
-                        starred: true,
-                        priority: 'high',
-                      },
-                    ].map((email, i) => (
+                    ].map((row, i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-3 rounded-lg border border-[#E9EAF1] bg-white p-2.5 transition-colors hover:bg-[#F7F8FC]"
+                        className="flex items-center justify-between p-3 rounded-xl bg-white border border-border shadow-xs text-xs"
                       >
-                        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#6558E8]/10">
-                          <span className="text-xs font-semibold text-[#6558E8]">
-                            {email.from[0]}
-                          </span>
+                        <div className="min-w-0 flex-1 pr-3">
+                          <p className="font-semibold text-ink truncate">{row.from}</p>
+                          <p className="text-txt-secondary truncate mt-0.5">{row.subject}</p>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate text-xs font-semibold text-[#20243A]">
-                              {email.from}
-                            </span>
-                            <span
-                              className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${email.badgeColor}`}
-                            >
-                              {email.badge}
-                            </span>
-                            {email.priority === 'high' && (
-                              <span className="h-1.5 w-1.5 rounded-full bg-red-400" />
-                            )}
-                          </div>
-                          <p className="truncate text-[11px] text-[#777D91]">
-                            {email.subject}
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {email.starred && (
-                            <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                          )}
-                          <span className="whitespace-nowrap text-[10px] text-[#777D91]">
-                            {email.time}
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${row.color}`}>
+                            {row.badge}
                           </span>
+                          <span className="text-[10px] text-txt-secondary/60">{row.time}</span>
                         </div>
                       </div>
                     ))}
@@ -335,295 +289,138 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Features ── */}
-      <section id="features" className="bg-[#F7F8FC] py-24">
+      {/* ── Key Features ── */}
+      <section id="features" className="py-24 border-t border-border bg-white">
         <div className="mx-auto max-w-7xl px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={staggerContainer}
-            className="text-center"
-          >
-            <motion.span
-              variants={fadeIn}
-              custom={0}
-              className="inline-flex items-center gap-2 rounded-full bg-[#6558E8]/10 px-3 py-1 text-sm font-medium text-[#6558E8]"
-            >
-              Features
-            </motion.span>
-            <motion.h2
-              variants={fadeIn}
-              custom={1}
-              className="mt-4 text-3xl font-bold text-[#20243A] md:text-4xl"
-            >
-              Everything you need to master your inbox
-            </motion.h2>
-            <motion.p
-              variants={fadeIn}
-              custom={2}
-              className="mx-auto mt-4 max-w-xl text-[#777D91]"
-            >
-              Powerful AI tools designed specifically for personal assistants
-              managing high-volume inboxes.
-            </motion.p>
-          </motion.div>
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-xs font-bold text-accent uppercase tracking-wider">
+              Core Architecture
+            </span>
+            <h2 className="mt-2 text-3xl md:text-4xl font-bold text-ink heading-serif">
+              Built for high-stakes executive operations
+            </h2>
+            <p className="mt-3 text-sm text-txt-secondary leading-relaxed">
+              InboxPilot removes communication friction between personal assistants and their executives through dedicated workspaces and transparent AI reasoning.
+            </p>
+          </div>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={staggerContainer}
-            className="mt-16 grid gap-8 md:grid-cols-3"
-          >
+          <div className="grid gap-6 md:grid-cols-3">
             {[
               {
                 icon: Brain,
-                title: 'Smart Classification',
+                title: 'Four-Tier AI Classification',
                 description:
-                  'AI automatically sorts every email by who should respond — assistant, client, no-reply, or needs review. No rules to set up.',
-                color: 'bg-blue-50 text-blue-600',
+                  'Every thread is autonomously analyzed and triaged into Assistant to Reply, Client Decisions, No Reply Needed, or Needs Review — without complex manual rule maintenance.',
               },
               {
-                icon: Users,
-                title: 'Dual Workspace',
+                icon: Focus,
+                title: 'Smart Focus Mode',
                 description:
-                  'Separate views for assistants and clients. Assistants manage, clients decide. Each role sees exactly what they need.',
-                color: 'bg-amber-50 text-amber-600',
+                  'Assistants review emails one conversation at a time with instant context, synthesized background, and one-click execution buttons.',
               },
               {
-                icon: Sparkles,
-                title: 'AI Insights',
+                icon: Shield,
+                title: 'Dual Workspace Portal',
                 description:
-                  'Instant summaries, action items, and suggested responses for every email thread. Make decisions in seconds, not minutes.',
-                color: 'bg-purple-50 text-purple-600',
+                  'Executives receive a clutter-free decision portal showing only matters requiring signatures, budget approvals, and strategic sign-offs.',
               },
             ].map((feature, i) => (
-              <motion.div
+              <div
                 key={feature.title}
-                variants={fadeIn}
-                custom={i}
-                className="group rounded-2xl border border-[#E9EAF1] bg-white p-8 transition-all hover:shadow-lg hover:shadow-[#6558E8]/5 hover:border-[#6558E8]/20"
+                className="card p-7 hover:border-accent/30 transition-all group"
               >
-                <div
-                  className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl ${feature.color}`}
-                >
-                  <feature.icon className="h-6 w-6" />
+                <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center text-accent mb-5 group-hover:bg-accent group-hover:text-white transition-colors">
+                  <feature.icon className="w-5 h-5" />
                 </div>
-                <h3 className="text-lg font-semibold text-[#20243A]">{feature.title}</h3>
-                <p className="mt-3 leading-relaxed text-[#777D91]">{feature.description}</p>
-              </motion.div>
+                <h3 className="text-base font-bold text-ink mb-2">{feature.title}</h3>
+                <p className="text-xs text-txt-secondary leading-relaxed">{feature.description}</p>
+              </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* ── How It Works ── */}
-      <section id="how-it-works" className="py-24">
+      {/* ── Workflow Steps ── */}
+      <section id="how-it-works" className="py-24 border-t border-border bg-canvas">
         <div className="mx-auto max-w-7xl px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-100px' }}
-            variants={staggerContainer}
-            className="text-center"
-          >
-            <motion.span
-              variants={fadeIn}
-              custom={0}
-              className="inline-flex items-center gap-2 rounded-full bg-[#6558E8]/10 px-3 py-1 text-sm font-medium text-[#6558E8]"
-            >
-              How it Works
-            </motion.span>
-            <motion.h2
-              variants={fadeIn}
-              custom={1}
-              className="mt-4 text-3xl font-bold text-[#20243A] md:text-4xl"
-            >
-              Up and running in minutes
-            </motion.h2>
-          </motion.div>
+          <div className="text-center max-w-2xl mx-auto mb-16">
+            <span className="text-xs font-bold text-accent uppercase tracking-wider">
+              End-to-End Flow
+            </span>
+            <h2 className="mt-2 text-3xl md:text-4xl font-bold text-ink heading-serif">
+              How executive desks operate with InboxPilot
+            </h2>
+          </div>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: '-80px' }}
-            variants={staggerContainer}
-            className="relative mt-16 grid gap-12 md:grid-cols-3"
-          >
-            {/* Connector line */}
-            <div className="absolute top-16 left-[16.6%] right-[16.6%] hidden h-0.5 bg-gradient-to-r from-[#6558E8]/20 via-[#6558E8]/40 to-[#6558E8]/20 md:block" />
-
+          <div className="grid gap-8 md:grid-cols-3">
             {[
               {
                 step: '01',
-                title: 'Connect your email',
-                description:
-                  'Link your Gmail or Outlook account with one click. Secure OAuth — we never see your password.',
-                icon: MailOpen,
+                title: 'Account Sync & Ingestion',
+                description: 'Connect simulated Gmail and Outlook enterprise accounts in seconds with zero credential exposure.',
               },
               {
                 step: '02',
-                title: 'AI classifies your inbox',
-                description:
-                  'Our AI reads every thread and categorizes it: assistant tasks, client decisions, no-reply, or needs review.',
-                icon: Brain,
+                title: 'Autonomous Classification & Trail',
+                description: 'AI inspects detected intent, urgency signals, and phrases, logging an inspectable decision trail.',
               },
               {
                 step: '03',
-                title: 'Focus on what matters',
-                description:
-                  'Work through a curated queue with AI summaries and suggested actions. Handle emails 5× faster.',
-                icon: CheckCircle2,
+                title: 'Execution & Executive Hand-Off',
+                description: 'Assistant dispatches simulated replies; high-stakes decisions surface in the client decision portal.',
               },
             ].map((step, i) => (
-              <motion.div key={step.step} variants={fadeIn} custom={i} className="text-center">
-                <div className="relative mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#6558E8] text-white shadow-lg shadow-[#6558E8]/25">
-                  <step.icon className="h-7 w-7" />
-                  <span className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-white text-xs font-bold text-[#6558E8] shadow ring-2 ring-[#6558E8]/20">
-                    {step.step}
-                  </span>
-                </div>
-                <h3 className="text-lg font-semibold text-[#20243A]">{step.title}</h3>
-                <p className="mx-auto mt-3 max-w-xs leading-relaxed text-[#777D91]">
-                  {step.description}
-                </p>
-              </motion.div>
+              <div key={step.step} className="card p-6 bg-white relative">
+                <span className="text-3xl font-extrabold text-accent/20 heading-serif">
+                  {step.step}
+                </span>
+                <h3 className="text-base font-bold text-ink mt-3 mb-2">{step.title}</h3>
+                <p className="text-xs text-txt-secondary leading-relaxed">{step.description}</p>
+              </div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* ── Social Proof ── */}
-      <section className="border-y border-[#E9EAF1] bg-[#F7F8FC] py-16">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={staggerContainer}
-          className="mx-auto flex max-w-7xl flex-col items-center justify-center gap-6 px-6 md:flex-row md:gap-12"
-        >
-          {/* Avatar stack */}
-          <motion.div variants={fadeIn} custom={0} className="flex -space-x-3">
-            {['S', 'M', 'E', 'J', 'P'].map((letter, i) => (
-              <div
-                key={i}
-                className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white text-sm font-semibold text-white shadow-sm"
-                style={{
-                  backgroundColor: [
-                    '#6558E8',
-                    '#E85858',
-                    '#58B4E8',
-                    '#E8A858',
-                    '#58E88B',
-                  ][i],
-                }}
-              >
-                {letter}
-              </div>
-            ))}
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-[#20243A] text-xs font-semibold text-white shadow-sm">
-              +2k
-            </div>
-          </motion.div>
-
-          <motion.div variants={fadeIn} custom={1}>
-            <p className="text-center text-lg font-semibold text-[#20243A] md:text-left">
-              Trusted by 2,000+ personal assistants
-            </p>
-            <div className="mt-1 flex items-center justify-center gap-1 md:justify-start">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-              ))}
-              <span className="ml-2 text-sm text-[#777D91]">4.9/5 average rating</span>
-            </div>
-          </motion.div>
-        </motion.div>
-      </section>
-
       {/* ── CTA Banner ── */}
-      <section id="pricing" className="py-24">
+      <section id="pricing" className="py-20 border-t border-border bg-ink text-white">
         <div className="mx-auto max-w-4xl px-6 text-center">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={staggerContainer}
-            className="rounded-3xl bg-gradient-to-br from-[#6558E8] to-[#4A3DCF] p-12 text-white shadow-2xl shadow-[#6558E8]/20 md:p-16"
-          >
-            <motion.h2
-              variants={fadeIn}
-              custom={0}
-              className="text-3xl font-bold md:text-4xl"
+          <h2 className="text-3xl md:text-4xl font-bold heading-serif">
+            Elevate your communication operations today
+          </h2>
+          <p className="mx-auto mt-4 max-w-xl text-sm text-white/70 leading-relaxed">
+            Experience the full competitive product demo or onboard your executive workspace.
+          </p>
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => navigate('/onboarding')}
+              className="rounded-xl bg-accent px-8 py-3 text-sm font-semibold text-white shadow-accent/30 shadow-lg hover:bg-accent-hover transition-all"
             >
-              Ready to take control of your inbox?
-            </motion.h2>
-            <motion.p
-              variants={fadeIn}
-              custom={1}
-              className="mx-auto mt-4 max-w-lg text-white/80"
+              Get Started Free
+            </button>
+            <button
+              onClick={handleTryDemo}
+              className="rounded-xl border border-white/20 bg-white/5 px-8 py-3 text-sm font-semibold text-white hover:bg-white/10 transition-all"
             >
-              Join thousands of personal assistants who save 2+ hours every day
-              with InboxPilot.
-            </motion.p>
-            <motion.div
-              variants={fadeIn}
-              custom={2}
-              className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
-            >
-              <button
-                onClick={() => navigate('/onboarding')}
-                className="group flex items-center gap-2 rounded-xl bg-white px-8 py-3.5 text-base font-semibold text-[#6558E8] shadow-lg transition-all hover:bg-white/90"
-              >
-                Get Started Free
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </button>
-              <button
-                onClick={handleTryDemo}
-                className="flex items-center gap-2 rounded-xl border border-white/30 px-8 py-3.5 text-base font-semibold text-white transition-all hover:bg-white/10"
-              >
-                <Play className="h-4 w-4" />
-                Try Demo
-              </button>
-            </motion.div>
-          </motion.div>
+              Try Interactive Demo
+            </button>
+          </div>
         </div>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="border-t border-[#E9EAF1] bg-white py-12">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="flex flex-col items-center justify-between gap-8 md:flex-row">
-            {/* Logo */}
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#6558E8]">
-                <Mail className="h-4 w-4 text-white" />
-              </div>
-              <span className="text-lg font-bold text-[#20243A]">InboxPilot</span>
+      <footer className="border-t border-border bg-white py-10">
+        <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-txt-secondary">
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-accent flex items-center justify-center text-white font-bold text-[10px]">
+              IP
             </div>
-
-            {/* Links */}
-            <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-[#777D91]">
-              <button onClick={() => scrollTo('features')} className="hover:text-[#20243A] transition-colors">
-                Features
-              </button>
-              <button onClick={() => scrollTo('how-it-works')} className="hover:text-[#20243A] transition-colors">
-                How it Works
-              </button>
-              <button onClick={() => scrollTo('pricing')} className="hover:text-[#20243A] transition-colors">
-                Pricing
-              </button>
-              <a href="#" className="hover:text-[#20243A] transition-colors">Privacy</a>
-              <a href="#" className="hover:text-[#20243A] transition-colors">Terms</a>
-            </div>
-
-            {/* Copyright */}
-            <p className="text-sm text-[#777D91]">
-              © {new Date().getFullYear()} InboxPilot. All rights reserved.
-            </p>
+            <span className="font-bold text-ink">InboxPilot</span>
+            <span>· Intelligent Executive Email Management</span>
           </div>
+          <div>© {new Date().getFullYear()} InboxPilot Inc. All rights reserved.</div>
         </div>
       </footer>
     </div>
-  )
+  );
 }

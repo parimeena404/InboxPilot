@@ -19,6 +19,7 @@ import {
   Settings,
   ChevronDown,
   X,
+  Focus,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import useStore from '@/store/useStore';
@@ -40,15 +41,14 @@ const navSections: NavSection[] = [
   {
     header: 'OVERVIEW',
     items: [
-      { label: 'Dashboard', icon: LayoutDashboard, to: '/dashboard' },
+      { label: 'Command Center', icon: LayoutDashboard, to: '/dashboard' },
+      { label: 'Focus Mode', icon: Focus, to: '/focus' },
       { label: 'All Emails', icon: Mail, to: '/inbox', badgeKey: 'all' },
       { label: 'Important', icon: Star, to: '/inbox?filter=important', filter: 'important', badgeKey: 'important' },
-      { label: 'Action Required', icon: AlertCircle, to: '/inbox?filter=action', filter: 'action', badgeKey: 'action' },
-      { label: 'Waiting', icon: Clock, to: '/inbox?filter=waiting', filter: 'waiting', badgeKey: 'waiting' },
     ],
   },
   {
-    header: 'SMART INBOX',
+    header: 'AI TRIAGE',
     items: [
       { label: 'Assistant to Reply', icon: UserCheck, to: '/inbox?filter=assistant', filter: 'assistant', badgeKey: 'assistant' },
       { label: 'Client to Reply', icon: UserCog, to: '/inbox?filter=client', filter: 'client', badgeKey: 'client' },
@@ -68,7 +68,7 @@ const navSections: NavSection[] = [
 
 const bottomItems: NavItem[] = [
   { label: 'AI Assistant', icon: Sparkles, to: '/ai-assistant' },
-  { label: 'Connected Accounts', icon: Link2, to: '/accounts' },
+  { label: 'Connections', icon: Link2, to: '/accounts' },
   { label: 'Settings', icon: Settings, to: '/settings' },
 ];
 
@@ -111,7 +111,6 @@ function isItemActive(item: NavItem, pathname: string, searchParams: URLSearchPa
 
   const currentFilter = searchParams.get('filter');
   if (itemFilter) return currentFilter === itemFilter;
-  // For "/inbox" with no filter, only active if no filter param
   if (itemPath === '/inbox') return !currentFilter;
   return true;
 }
@@ -144,10 +143,12 @@ const Sidebar: React.FC = () => {
   const sidebarContent = (
     <div className="flex flex-col h-full">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 py-5">
-        <Mail className="w-7 h-7 text-[#6558E8] flex-shrink-0" />
+      <div className="flex items-center gap-2.5 px-5 h-16 flex-shrink-0">
+        <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
+          <Mail className="w-4 h-4 text-white" />
+        </div>
         {!sidebarCollapsed && (
-          <span className="text-white font-bold text-lg tracking-tight whitespace-nowrap">
+          <span className="text-white font-bold text-[15px] tracking-tight whitespace-nowrap">
             InboxPilot
           </span>
         )}
@@ -155,42 +156,48 @@ const Sidebar: React.FC = () => {
 
       {/* Workspace Switcher */}
       {!sidebarCollapsed && (
-        <div className="px-3 mb-3" ref={roleSwitcherRef}>
+        <div className="px-3 mb-4" ref={roleSwitcherRef}>
           <button
             onClick={() => setRoleSwitcherOpen(!roleSwitcherOpen)}
-            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 transition-colors text-sm text-white/80"
+            className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.1] transition-colors text-[13px] text-white/80"
           >
-            <span className="capitalize">{role} View</span>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${role === 'assistant' ? 'bg-accent' : 'bg-amber-400'}`} />
+              <span className="capitalize font-medium">{role} Workspace</span>
+            </div>
             <ChevronDown
-              className={`w-4 h-4 transition-transform ${roleSwitcherOpen ? 'rotate-180' : ''}`}
+              className={`w-3.5 h-3.5 transition-transform duration-200 ${roleSwitcherOpen ? 'rotate-180' : ''}`}
             />
           </button>
           <AnimatePresence>
             {roleSwitcherOpen && (
               <motion.div
-                initial={{ opacity: 0, y: -4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.15 }}
-                className="mt-1 bg-[#1e2540] rounded-lg overflow-hidden border border-white/10"
+                className="overflow-hidden"
               >
-                {(['assistant', 'client'] as const).map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => {
-                      setRole(r);
-                      setRoleSwitcherOpen(false);
-                      navigate(r === 'client' ? '/client' : '/dashboard');
-                    }}
-                    className={`w-full text-left px-3 py-2 text-sm transition-colors capitalize ${
-                      role === r
-                        ? 'text-[#6558E8] bg-white/5'
-                        : 'text-white/70 hover:bg-white/5 hover:text-white'
-                    }`}
-                  >
-                    {r} View
-                  </button>
-                ))}
+                <div className="mt-1 bg-white/[0.06] rounded-lg overflow-hidden">
+                  {(['assistant', 'client'] as const).map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => {
+                        setRole(r);
+                        setRoleSwitcherOpen(false);
+                        navigate(r === 'client' ? '/client' : '/dashboard');
+                      }}
+                      className={`w-full text-left px-3 py-2.5 text-[13px] transition-colors capitalize flex items-center gap-2 ${
+                        role === r
+                          ? 'text-accent-light bg-white/[0.04]'
+                          : 'text-white/50 hover:bg-white/[0.04] hover:text-white/80'
+                      }`}
+                    >
+                      <div className={`w-1.5 h-1.5 rounded-full ${r === 'assistant' ? 'bg-accent' : 'bg-amber-400'}`} />
+                      {r} Workspace
+                    </button>
+                  ))}
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
@@ -198,11 +205,11 @@ const Sidebar: React.FC = () => {
       )}
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto px-3 space-y-5 scrollbar-thin">
+      <nav className="flex-1 overflow-y-auto px-3 space-y-5">
         {navSections.map((section) => (
           <div key={section.header}>
             {!sidebarCollapsed && (
-              <h3 className="text-[10px] font-semibold text-white/30 uppercase tracking-widest px-3 mb-1.5">
+              <h3 className="text-[10px] font-semibold text-white/25 uppercase tracking-[0.1em] px-3 mb-2">
                 {section.header}
               </h3>
             )}
@@ -219,27 +226,29 @@ const Sidebar: React.FC = () => {
                         if (mobileSidebarOpen) toggleMobileSidebar();
                       }}
                       className={() =>
-                        `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        `flex items-center gap-2.5 px-3 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150 relative ${
                           active
-                            ? 'bg-[#6558E8] text-white'
-                            : 'text-white/60 hover:bg-white/5 hover:text-white/90'
+                            ? 'bg-accent text-white shadow-sm'
+                            : 'text-white/50 hover:bg-white/[0.06] hover:text-white/80'
                         } ${sidebarCollapsed ? 'justify-center' : ''}`
                       }
                       title={sidebarCollapsed ? item.label : undefined}
                     >
-                      <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+                      <Icon className="w-[16px] h-[16px] flex-shrink-0" />
                       {!sidebarCollapsed && (
                         <>
                           <span className="flex-1 truncate">{item.label}</span>
                           {count > 0 && (
-                            <span className="min-w-[20px] h-5 flex items-center justify-center rounded-full bg-white/15 text-[11px] font-semibold text-white px-1.5">
+                            <span className={`min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold px-1 ${
+                              active ? 'bg-white/20 text-white' : 'bg-white/10 text-white/60'
+                            }`}>
                               {count}
                             </span>
                           )}
                         </>
                       )}
                       {sidebarCollapsed && count > 0 && (
-                        <span className="absolute right-1.5 top-0.5 w-2 h-2 rounded-full bg-[#6558E8]" />
+                        <span className="absolute right-2 top-1 w-1.5 h-1.5 rounded-full bg-accent-light" />
                       )}
                     </NavLink>
                   </li>
@@ -251,7 +260,7 @@ const Sidebar: React.FC = () => {
       </nav>
 
       {/* Bottom Section */}
-      <div className="border-t border-white/10 px-3 pt-3 pb-2 space-y-0.5">
+      <div className="border-t border-white/[0.06] px-3 pt-3 pb-3 space-y-0.5">
         {bottomItems.map((item) => {
           const Icon = item.icon;
           const active = isItemActive(item, location.pathname, searchParams);
@@ -263,15 +272,15 @@ const Sidebar: React.FC = () => {
                 if (mobileSidebarOpen) toggleMobileSidebar();
               }}
               className={() =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                `flex items-center gap-2.5 px-3 py-[7px] rounded-lg text-[13px] font-medium transition-all duration-150 ${
                   active
-                    ? 'bg-[#6558E8] text-white'
-                    : 'text-white/60 hover:bg-white/5 hover:text-white/90'
+                    ? 'bg-accent text-white shadow-sm'
+                    : 'text-white/50 hover:bg-white/[0.06] hover:text-white/80'
                 } ${sidebarCollapsed ? 'justify-center' : ''}`
               }
               title={sidebarCollapsed ? item.label : undefined}
             >
-              <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+              <Icon className="w-[16px] h-[16px] flex-shrink-0" />
               {!sidebarCollapsed && <span className="truncate">{item.label}</span>}
             </NavLink>
           );
@@ -280,11 +289,11 @@ const Sidebar: React.FC = () => {
         {/* Profile */}
         {user && (
           <div
-            className={`flex items-center gap-3 px-3 py-2.5 mt-2 rounded-lg bg-white/5 ${
+            className={`flex items-center gap-2.5 px-3 py-2.5 mt-2 rounded-lg bg-white/[0.04] ${
               sidebarCollapsed ? 'justify-center' : ''
             }`}
           >
-            <div className="w-8 h-8 rounded-full bg-[#6558E8] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            <div className="w-7 h-7 rounded-full bg-accent/80 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
               {user.name
                 .split(' ')
                 .map((n) => n[0])
@@ -293,8 +302,8 @@ const Sidebar: React.FC = () => {
             </div>
             {!sidebarCollapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{user.name}</p>
-                <p className="text-[11px] text-white/40 capitalize">{role}</p>
+                <p className="text-[13px] font-medium text-white/90 truncate">{user.name}</p>
+                <p className="text-[10px] text-white/30 capitalize">{role}</p>
               </div>
             )}
           </div>
@@ -307,9 +316,9 @@ const Sidebar: React.FC = () => {
     <>
       {/* Desktop Sidebar */}
       <motion.aside
-        animate={{ width: sidebarCollapsed ? 72 : 260 }}
-        transition={{ duration: 0.2, ease: 'easeInOut' }}
-        className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-30 bg-[#151B2D] overflow-hidden"
+        animate={{ width: sidebarCollapsed ? 72 : 248 }}
+        transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
+        className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 z-30 bg-sidebar overflow-hidden"
       >
         {sidebarContent}
       </motion.aside>
@@ -327,15 +336,15 @@ const Sidebar: React.FC = () => {
               onClick={toggleMobileSidebar}
             />
             <motion.aside
-              initial={{ x: -280 }}
+              initial={{ x: -260 }}
               animate={{ x: 0 }}
-              exit={{ x: -280 }}
-              transition={{ duration: 0.25, ease: 'easeOut' }}
-              className="fixed left-0 top-0 bottom-0 w-[280px] z-50 bg-[#151B2D] md:hidden flex flex-col"
+              exit={{ x: -260 }}
+              transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
+              className="fixed left-0 top-0 bottom-0 w-[260px] z-50 bg-sidebar md:hidden flex flex-col"
             >
               <button
                 onClick={toggleMobileSidebar}
-                className="absolute top-4 right-4 text-white/50 hover:text-white"
+                className="absolute top-4 right-4 text-white/40 hover:text-white transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>

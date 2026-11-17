@@ -12,7 +12,6 @@ import {
   LogOut,
   ArrowLeftRight,
   RotateCcw,
-  Check,
 } from 'lucide-react';
 import useStore from '@/store/useStore';
 import { SearchInput } from '@/components/ui/SearchInput';
@@ -23,8 +22,9 @@ interface TopBarProps {
 }
 
 const routeTitles: Record<string, string> = {
-  '/dashboard': 'Dashboard',
+  '/dashboard': 'Command Center',
   '/inbox': 'Inbox',
+  '/focus': 'Focus Mode',
   '/meetings': 'Meetings',
   '/ai-assistant': 'AI Assistant',
   '/accounts': 'Connected Accounts',
@@ -89,11 +89,11 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
   }, []);
 
   return (
-    <header className="h-16 bg-white border-b border-[#E9EAF1] flex items-center gap-3 px-4 lg:px-6 sticky top-0 z-20">
+    <header className="h-14 bg-white/80 backdrop-blur-xl border-b border-border flex items-center gap-3 px-4 lg:px-6 sticky top-0 z-20">
       {/* Mobile menu button */}
       <button
         onClick={toggleMobileSidebar}
-        className="md:hidden p-2 -ml-2 rounded-lg text-[#777D91] hover:bg-[#F7F8FC] hover:text-[#20243A] transition-colors"
+        className="md:hidden p-2 -ml-2 rounded-lg text-txt-secondary hover:bg-canvas hover:text-txt-primary transition-colors"
       >
         <Menu className="w-5 h-5" />
       </button>
@@ -101,20 +101,20 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
       {/* Desktop collapse button */}
       <button
         onClick={toggleSidebar}
-        className="hidden md:flex p-2 -ml-2 rounded-lg text-[#777D91] hover:bg-[#F7F8FC] hover:text-[#20243A] transition-colors"
+        className="hidden md:flex p-1.5 -ml-1.5 rounded-lg text-txt-secondary hover:bg-canvas hover:text-txt-primary transition-colors"
       >
         {sidebarCollapsed ? (
-          <PanelLeftOpen className="w-5 h-5" />
+          <PanelLeftOpen className="w-4.5 h-4.5" />
         ) : (
-          <PanelLeftClose className="w-5 h-5" />
+          <PanelLeftClose className="w-4.5 h-4.5" />
         )}
       </button>
 
       {/* Title & Breadcrumb */}
       <div className="flex flex-col min-w-0">
-        <h1 className="text-lg font-semibold text-[#20243A] truncate">{pageTitle}</h1>
+        <h1 className="text-[15px] font-semibold text-txt-primary truncate">{pageTitle}</h1>
         {breadcrumb && (
-          <div className="text-xs text-[#777D91]">{breadcrumb}</div>
+          <div className="text-xs text-txt-secondary">{breadcrumb}</div>
         )}
       </div>
 
@@ -122,7 +122,7 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
       <div className="flex-1" />
 
       {/* Search */}
-      <div className="hidden sm:block w-64 lg:w-80">
+      <div className="hidden sm:block w-56 lg:w-72">
         <SearchInput
           value={searchQuery}
           onChange={(val) => {
@@ -139,11 +139,11 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
       <div className="relative" ref={notifRef}>
         <button
           onClick={() => setNotifOpen(!notifOpen)}
-          className="relative p-2 rounded-lg text-[#777D91] hover:bg-[#F7F8FC] hover:text-[#20243A] transition-colors"
+          className="relative p-2 rounded-lg text-txt-secondary hover:bg-canvas hover:text-txt-primary transition-colors"
         >
-          <Bell className="w-5 h-5" />
+          <Bell className="w-[18px] h-[18px]" />
           {unreadNotifCount > 0 && (
-            <span className="absolute top-1 right-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-[#6558E8] text-[10px] font-bold text-white px-1">
+            <span className="absolute top-1 right-1 min-w-[14px] h-[14px] flex items-center justify-center rounded-full bg-accent text-[9px] font-bold text-white px-0.5">
               {unreadNotifCount}
             </span>
           )}
@@ -152,23 +152,23 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
         <AnimatePresence>
           {notifOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              initial={{ opacity: 0, y: 6, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-lg border border-[#E9EAF1] overflow-hidden z-50"
+              exit={{ opacity: 0, y: 6, scale: 0.97 }}
+              transition={{ duration: 0.12 }}
+              className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-panel border border-border overflow-hidden z-50"
             >
-              <div className="px-4 py-3 border-b border-[#E9EAF1] flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[#20243A]">Notifications</h3>
+              <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-txt-primary">Notifications</h3>
                 {unreadNotifCount > 0 && (
-                  <span className="text-xs text-[#6558E8] font-medium">
+                  <span className="text-[11px] text-accent font-medium">
                     {unreadNotifCount} unread
                   </span>
                 )}
               </div>
-              <div className="max-h-80 overflow-y-auto">
+              <div className="max-h-72 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <p className="px-4 py-8 text-sm text-[#777D91] text-center">
+                  <p className="px-4 py-8 text-sm text-txt-secondary text-center">
                     No notifications yet
                   </p>
                 ) : (
@@ -176,22 +176,22 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
                     <button
                       key={n.id}
                       onClick={() => markNotificationRead(n.id)}
-                      className={`w-full text-left px-4 py-3 border-b border-[#E9EAF1] last:border-0 hover:bg-[#F7F8FC] transition-colors ${
-                        !n.read ? 'bg-[#F7F8FC]/60' : ''
+                      className={`w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-canvas transition-colors ${
+                        !n.read ? 'bg-accent/[0.03]' : ''
                       }`}
                     >
                       <div className="flex items-start gap-2">
                         {!n.read && (
-                          <span className="w-2 h-2 rounded-full bg-[#6558E8] flex-shrink-0 mt-1.5" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-accent flex-shrink-0 mt-1.5" />
                         )}
-                        <div className={`min-w-0 ${n.read ? 'ml-4' : ''}`}>
-                          <p className="text-sm font-medium text-[#20243A] truncate">
+                        <div className={`min-w-0 ${n.read ? 'ml-3.5' : ''}`}>
+                          <p className="text-[13px] font-medium text-txt-primary truncate">
                             {n.title}
                           </p>
-                          <p className="text-xs text-[#777D91] mt-0.5 line-clamp-2">
+                          <p className="text-xs text-txt-secondary mt-0.5 line-clamp-2">
                             {n.message}
                           </p>
-                          <p className="text-[10px] text-[#777D91]/60 mt-1">
+                          <p className="text-[10px] text-txt-secondary/50 mt-1">
                             {new Date(n.timestamp).toLocaleString()}
                           </p>
                         </div>
@@ -208,19 +208,19 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
       {/* AI Shortcut */}
       <button
         onClick={toggleAiPanel}
-        className="p-2 rounded-lg text-[#777D91] hover:bg-[#F7F8FC] hover:text-[#6558E8] transition-colors"
+        className="p-2 rounded-lg text-txt-secondary hover:bg-accent/[0.08] hover:text-accent transition-colors"
         title="AI Assistant"
       >
-        <Sparkles className="w-5 h-5" />
+        <Sparkles className="w-[18px] h-[18px]" />
       </button>
 
       {/* User Menu */}
       <div className="relative" ref={userMenuRef}>
         <button
           onClick={() => setUserMenuOpen(!userMenuOpen)}
-          className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-[#F7F8FC] transition-colors"
+          className="flex items-center gap-2 p-1 rounded-lg hover:bg-canvas transition-colors"
         >
-          <div className="w-8 h-8 rounded-full bg-[#6558E8] flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+          <div className="w-7 h-7 rounded-full bg-accent flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
             {user
               ? user.name
                   .split(' ')
@@ -229,23 +229,23 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
                   .toUpperCase()
               : '?'}
           </div>
-          <ChevronDown className="w-4 h-4 text-[#777D91] hidden sm:block" />
+          <ChevronDown className="w-3.5 h-3.5 text-txt-secondary hidden sm:block" />
         </button>
 
         <AnimatePresence>
           {userMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              initial={{ opacity: 0, y: 6, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8, scale: 0.95 }}
-              transition={{ duration: 0.15 }}
-              className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-lg border border-[#E9EAF1] overflow-hidden z-50"
+              exit={{ opacity: 0, y: 6, scale: 0.97 }}
+              transition={{ duration: 0.12 }}
+              className="absolute right-0 top-full mt-2 w-60 bg-white rounded-xl shadow-panel border border-border overflow-hidden z-50"
             >
               {user && (
-                <div className="px-4 py-3 border-b border-[#E9EAF1]">
-                  <p className="text-sm font-semibold text-[#20243A]">{user.name}</p>
-                  <p className="text-xs text-[#777D91]">{user.email}</p>
-                  <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-wider text-[#6558E8] bg-[#6558E8]/10 px-2 py-0.5 rounded-full capitalize">
+                <div className="px-4 py-3 border-b border-border">
+                  <p className="text-sm font-semibold text-txt-primary">{user.name}</p>
+                  <p className="text-xs text-txt-secondary">{user.email}</p>
+                  <span className="inline-block mt-1 text-[10px] font-semibold uppercase tracking-wider text-accent bg-accent/10 px-2 py-0.5 rounded capitalize">
                     {role}
                   </span>
                 </div>
@@ -258,9 +258,9 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
                     setUserMenuOpen(false);
                     navigate(nextRole === 'client' ? '/client' : '/dashboard');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#20243A] hover:bg-[#F7F8FC] transition-colors"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-[13px] text-txt-primary hover:bg-canvas transition-colors"
                 >
-                  <ArrowLeftRight className="w-4 h-4 text-[#777D91]" />
+                  <ArrowLeftRight className="w-4 h-4 text-txt-secondary" />
                   Switch to {role === 'assistant' ? 'Client' : 'Assistant'}
                 </button>
                 <button
@@ -268,9 +268,9 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
                     setUserMenuOpen(false);
                     navigate('/settings');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#20243A] hover:bg-[#F7F8FC] transition-colors"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-[13px] text-txt-primary hover:bg-canvas transition-colors"
                 >
-                  <Settings className="w-4 h-4 text-[#777D91]" />
+                  <Settings className="w-4 h-4 text-txt-secondary" />
                   Settings
                 </button>
                 <button
@@ -279,19 +279,19 @@ const TopBar: React.FC<TopBarProps> = ({ title: titleProp, breadcrumb }) => {
                     setUserMenuOpen(false);
                     navigate('/dashboard');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-[#20243A] hover:bg-[#F7F8FC] transition-colors"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-[13px] text-txt-primary hover:bg-canvas transition-colors"
                 >
-                  <RotateCcw className="w-4 h-4 text-[#777D91]" />
+                  <RotateCcw className="w-4 h-4 text-txt-secondary" />
                   Reset Demo
                 </button>
-                <div className="border-t border-[#E9EAF1] my-1" />
+                <div className="border-t border-border my-1" />
                 <button
                   onClick={() => {
                     logout();
                     setUserMenuOpen(false);
                     navigate('/');
                   }}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  className="w-full flex items-center gap-2.5 px-4 py-2 text-[13px] text-red-600 hover:bg-red-50 transition-colors"
                 >
                   <LogOut className="w-4 h-4" />
                   Sign Out
